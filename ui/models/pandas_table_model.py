@@ -1,7 +1,7 @@
 from PySide6.QtCore import QAbstractTableModel, Qt
 
 class PandasTableModel(QAbstractTableModel):
-    def __init__(self, dataframe, max_rows=100):
+    def __init__(self, dataframe, max_rows=10):
         super().__init__()
         self._df = dataframe.head(max_rows)
 

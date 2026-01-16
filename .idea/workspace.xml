@@ -4,13 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="basic file loading">
-      <change afterPath="$PROJECT_DIR$/core/data_models/data_profile.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/models/pandas_table_model.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/models/profile_table_model.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/viewmodels/base_vm.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/viewmodels/data_vm.py" afterDir="false" />
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="basic data demonstration">
+      <change afterPath="$PROJECT_DIR$/ui/pages/base_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/clustering_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/features_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/markov_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/preprocessing_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/report_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/segmentation_page.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/models/pandas_table_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/models/pandas_table_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/navigation_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/navigation_panel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ui/pages/data_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/data_page.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -53,16 +58,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.data_page.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;app-skeleton&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.data_page.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.main_window.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "app-skeleton"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\ui\models" />
@@ -91,7 +97,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767899172351</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="basic data demonstration">
+      <option name="closed" value="true" />
+      <created>1768398304885</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1768398304885</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -122,6 +136,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="basic file loading" />
-    <option name="LAST_COMMIT_MESSAGE" value="basic file loading" />
+    <MESSAGE value="basic data demonstration" />
+    <option name="LAST_COMMIT_MESSAGE" value="basic data demonstration" />
   </component>
 </project>
