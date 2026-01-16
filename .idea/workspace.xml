@@ -1,15 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="" />
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="basic data demonstration">
+      <change afterPath="$PROJECT_DIR$/ui/pages/base_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/clustering_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/features_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/markov_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/preprocessing_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/report_page.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/pages/segmentation_page.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/models/pandas_table_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/models/pandas_table_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/navigation_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/navigation_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/pages/data_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/data_page.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;in-the-neon-sunrise&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/in-the-neon-sunrise/TimeSeriesAnalysis.git&quot;,
+    &quot;accountId&quot;: &quot;17e20b8d-8556-48b5-977a-00d19400db44&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="37zAOj0tdRkLIZfh4gRXniaGoYe" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -18,9 +61,19 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+    "Python.data_page.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.main_window.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "app-skeleton"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\ui\models" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -36,6 +89,54 @@
       <option name="presentableId" value="Default" />
       <updated>1767895495949</updated>
     </task>
+    <task id="LOCAL-00001" summary="basic file loading">
+      <option name="closed" value="true" />
+      <created>1767899172351</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1767899172351</updated>
+    </task>
+    <task id="LOCAL-00002" summary="basic data demonstration">
+      <option name="closed" value="true" />
+      <created>1768398304885</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1768398304885</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="User">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="*" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="basic file loading" />
+    <MESSAGE value="basic data demonstration" />
+    <option name="LAST_COMMIT_MESSAGE" value="basic data demonstration" />
   </component>
 </project>
