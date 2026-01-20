@@ -8,9 +8,9 @@ class DataViewModel(BaseViewModel):
     data_loaded = Signal(object)
     profile_ready = Signal(list)
 
-    def __init__(self, project_service):
+    def __init__(self, project):
         super().__init__()
-        self.project = project_service
+        self.project = project
 
     def load_data(self, file_path: str):
         if not file_path:

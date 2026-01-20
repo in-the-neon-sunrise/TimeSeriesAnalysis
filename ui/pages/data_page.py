@@ -61,7 +61,12 @@ class DataPage(BasePage):
         layout.addStretch()
 
     def on_enter(self):
-        pass
+        if self.vm.project.has_data():
+            print("Replacing Project 2")
+            self.show_data(self.vm.project.dataframe)
+            self.vm.load_data(self.vm.project.csv_path)
+            self.load_btn.setText("Заменить файл")
+            self.info_label.setText("Файл загружен из проекта")
 
     def on_load_clicked(self):
         if self.vm.project.has_data():
