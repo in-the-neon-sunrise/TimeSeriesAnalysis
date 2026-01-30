@@ -1,4 +1,4 @@
-from ui.models.project import Project
+from core.models.project import Project
 
 
 class ProjectService:

@@ -2,7 +2,7 @@ from PySide6.QtCore import Signal
 
 from viewmodels.base_vm import BaseViewModel
 from infrastructure.csv_loader import load_csv
-from core.data_models.data_profile import build_data_profile
+from core.models.data_profile import build_data_profile
 
 class DataViewModel(BaseViewModel):
     data_loaded = Signal(object)

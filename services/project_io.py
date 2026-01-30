@@ -1,6 +1,6 @@
 import json
 import pandas as pd
-from ui.models.project import Project
+from core.models.project import Project
 
 
 def save_project(project: Project, file_path: str):
