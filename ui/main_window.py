@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QStackedWidget
+    QMainWindow, QWidget, QHBoxLayout, QStackedWidget, QFileDialog
 )
+from services.project_service import ProjectService
 from ui.navigation_panel import NavigationPanel
 from ui.pages.data_page import DataPage
 from ui.pages.preprocessing_page import PreprocessingPage
@@ -17,6 +18,7 @@ class MainWindow(QMainWindow):
         self.resize(1000, 600)
 
         self.project = project
+        self.project_service = ProjectService()
 
         self.stack = QStackedWidget()
 
@@ -80,4 +82,28 @@ class MainWindow(QMainWindow):
 
         if hasattr(page, "on_enter"):
             page.on_enter()
+
+    def open_project(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Открыть проект", "", "AATSA Project (*.aatsa)"
+        )
+        if path:
+            self.project_service.open_project(path)
+            self.refresh_ui()
+
+    def save_project(self):
+        try:
+            self.project_service.save()
+        except RuntimeError:
+            self.save_project_as()
+
+    def save_project_as(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить проект", "", "AATSA Project (*.aatsa)"
+        )
+        if path:
+            self.project_service.save_as(path)
+
+
+
 
