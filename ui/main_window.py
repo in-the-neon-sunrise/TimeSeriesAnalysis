@@ -5,6 +5,7 @@ from ui.navigation_panel import NavigationPanel
 from ui.pages.data_page import DataPage
 from ui.pages.preprocessing_page import PreprocessingPage
 from ui.pages.features_page import FeaturesPage
+from ui.pages.primary_analysis_page import PrimaryAnalysisPage
 from ui.pages.segmentation_page import SegmentationPage
 from ui.pages.clustering_page import ClusteringPage
 from ui.pages.markov_page import MarkovPage
@@ -21,6 +22,7 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
 
         self.data_page = DataPage(self.project)
+        self.primary_analysis_page = PrimaryAnalysisPage(self.project)
         self.preprocessing_page = PreprocessingPage(self.project)
         self.features_page = FeaturesPage(self.project)
         self.segmentation_page = SegmentationPage(self.project)
@@ -29,6 +31,7 @@ class MainWindow(QMainWindow):
         self.report_page = ReportPage(self.project)
 
         self.stack.addWidget(self.data_page)
+        self.stack.addWidget(self.primary_analysis_page)
         self.stack.addWidget(self.preprocessing_page)
         self.stack.addWidget(self.features_page)
         self.stack.addWidget(self.segmentation_page)
@@ -41,6 +44,9 @@ class MainWindow(QMainWindow):
         #self.navigation.data_clicked.connect(self.show_data_page)
         self.navigation.data_clicked.connect(
             lambda: self.show_page(self.data_page)
+        )
+        self.navigation.primary_analysis_clicked.connect(
+            lambda: self.show_page(self.primary_analysis_page)
         )
         self.navigation.preprocessing_clicked.connect(
             lambda: self.show_page(self.preprocessing_page)

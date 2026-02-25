@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
+from ui.canvas import ScrollFriendlyCanvas
 from ui.pages.base_page import BasePage
 from services.preprocessing_service import PreprocessingService
 from viewmodels.data_vm import DataViewModel
@@ -53,8 +54,15 @@ class PreprocessingPage(BasePage):
         layout.addWidget(self.smoothing_group)
 
         self.figure = Figure(figsize=(5, 3))
-        self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
+        self.canvas = ScrollFriendlyCanvas(self.figure)
+        self.canvas.setMinimumHeight(300)
+
+        figure_container = QWidget()
+        figure_layout = QVBoxLayout(figure_container)
+        figure_layout.setContentsMargins(0, 0, 0, 0)
+        figure_layout.addWidget(self.canvas)
+
+        layout.addWidget(figure_container)
 
         self.apply_btn = QPushButton("Применить изменения")
         self.apply_btn.clicked.connect(self.apply)
