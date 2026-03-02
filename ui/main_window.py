@@ -12,23 +12,23 @@ from ui.pages.markov_page import MarkovPage
 from ui.pages.report_page import ReportPage
 
 class MainWindow(QMainWindow):
-    def __init__(self, project):
+    def __init__(self, data_vm):
         super().__init__()
         self.setWindowTitle("Анализ сейсмологических данных")
         self.resize(1000, 600)
 
-        self.project = project
+        self.data_vm = data_vm
 
         self.stack = QStackedWidget()
 
-        self.data_page = DataPage(self.project)
-        self.primary_analysis_page = PrimaryAnalysisPage(self.project)
-        self.preprocessing_page = PreprocessingPage(self.project)
-        self.features_page = FeaturesPage(self.project)
-        self.segmentation_page = SegmentationPage(self.project)
-        self.clustering_page = ClusteringPage(self.project)
-        self.markov_page = MarkovPage(self.project)
-        self.report_page = ReportPage(self.project)
+        self.data_page = DataPage(self.data_vm)
+        self.primary_analysis_page = PrimaryAnalysisPage(self.data_vm)
+        self.preprocessing_page = PreprocessingPage(self.data_vm)
+        self.features_page = FeaturesPage(self.data_vm)
+        self.segmentation_page = SegmentationPage(self.data_vm)
+        self.clustering_page = ClusteringPage(self.data_vm)
+        self.markov_page = MarkovPage(self.data_vm)
+        self.report_page = ReportPage(self.data_vm)
 
         self.stack.addWidget(self.data_page)
         self.stack.addWidget(self.primary_analysis_page)
@@ -73,9 +73,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.stack)
 
         self.setCentralWidget(central)
-
-    def show_data_page(self):
-        self.stack.setCurrentWidget(self.data_page)
 
     def show_page(self, page):
         current = self.stack.currentWidget()

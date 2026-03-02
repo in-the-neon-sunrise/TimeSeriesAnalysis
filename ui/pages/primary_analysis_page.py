@@ -15,10 +15,10 @@ from services.data_statistics_service import DataStatisticsService
 
 
 class PrimaryAnalysisPage(BasePage):
-    def __init__(self, project):
+    def __init__(self, data_vm):
         super().__init__()
 
-        self.vm = project.data_vm
+        self.vm = data_vm
         self.df = None
 
         self.vm.data_loaded.connect(self.on_data_ready)
@@ -144,8 +144,8 @@ class PrimaryAnalysisPage(BasePage):
 
 
     def on_enter(self):
-        if self.vm.project.has_data():
-            self.setup_analysis(self.vm.project.get_data())
+        if self.vm.has_raw_data():
+            self.setup_analysis(self.vm.get_raw_data())
 
     # ==========================================================
     # Data handling

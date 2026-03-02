@@ -13,13 +13,12 @@ from viewmodels.data_vm import DataViewModel
 
 
 class PreprocessingPage(BasePage):
-    def __init__(self, project):
+    def __init__(self, data_vm):
         super().__init__()
 
-        self.project = project
         self.df = None
 
-        self.vm = project.data_vm
+        self.vm = data_vm
         self.vm.data_loaded.connect(self.on_data_loaded)
 
         scroll = QScrollArea(self)

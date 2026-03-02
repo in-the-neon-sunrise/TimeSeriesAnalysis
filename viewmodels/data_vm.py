@@ -12,21 +12,34 @@ class DataViewModel(BaseViewModel):
         super().__init__()
         self.project = project_service
 
+    # Загрузка CSV
+
     def load_data(self, file_path: str):
         if not file_path:
             return
 
         try:
-            data = load_csv(file_path)
-            self.project.set_raw_data(data, file_path)
+            df = load_csv(file_path)
 
-            profile = build_data_profile(data)
-
+            # сохраняем в ProjectService
+            self.project.set_raw_data(df, file_path)
+            self.data_loaded.emit(df)
+            # строим профиль
+            profile = build_data_profile(df)
+            # уведомляем UI
             self.info_changed.emit(
-                f"Файл загружен:\n{file_path}\nСтрок: {len(data)}"
+                f"Файл загружен:\n{file_path}\nСтрок: {len(df)}"
             )
-            self.data_loaded.emit(data)
+
+            self.data_loaded.emit(df)
             self.profile_ready.emit(profile)
 
         except Exception as e:
             self.error_occurred.emit(str(e))
+
+
+    def get_raw_data(self):
+        return self.project.raw_data
+
+    def has_raw_data(self):
+        return self.project.has_raw_data()

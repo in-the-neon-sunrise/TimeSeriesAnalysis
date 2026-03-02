@@ -10,10 +10,10 @@ from ui.models.pandas_table_model import PandasTableModel
 
 
 class DataPage(BasePage):
-    def __init__(self, project):
+    def __init__(self, data_vm):
         super().__init__()
 
-        self.vm = project.data_vm
+        self.vm = data_vm
         self.vm.info_changed.connect(self.update_info)
         self.vm.error_occurred.connect(self.show_error)
 
@@ -126,7 +126,7 @@ class DataPage(BasePage):
     # Загрузка файла
 
     def on_load_clicked(self):
-        if self.vm.project.has_data():
+        if self.vm.has_raw_data():
             reply = QMessageBox.question(
                 self,
                 "Подтверждение",

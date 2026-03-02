@@ -4,9 +4,9 @@ from services.report_service import ReportService
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 class ReportPage(BasePage):
-    def __init__(self, project):
+    def __init__(self, data_vm):
         super().__init__()
-        self.project = project
+        self.vm = data_vm
         self.report_btn = QPushButton("Создать отчет")
         self.report_btn.clicked.connect(self.on_report_clicked)
 
