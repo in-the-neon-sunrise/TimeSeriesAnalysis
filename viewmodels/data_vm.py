@@ -8,9 +8,10 @@ class DataViewModel(BaseViewModel):
     data_loaded = Signal(object)
     profile_ready = Signal(list)
 
-    def __init__(self, project_service):
+    def __init__(self, project_service, repository):
         super().__init__()
         self.project = project_service
+        self.repository = repository
 
     # Загрузка CSV
 
@@ -43,3 +44,36 @@ class DataViewModel(BaseViewModel):
 
     def has_raw_data(self):
         return self.project.has_raw_data()
+
+    def save_project(self):
+        if not self.project.file_path:
+            self.error_occurred.emit("Файл проекта не выбран.")
+            return
+
+        try:
+            self.repository.save(self.project, self.project.file_path)
+            self.info_changed.emit("Проект успешно сохранён.")
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+    def save_project_as(self, file_path: str):
+        try:
+            self.project.file_path = file_path
+            self.repository.save(self.project, file_path)
+            self.info_changed.emit("Проект успешно сохранён.")
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+    def load_project(self, file_path: str):
+        try:
+            self.repository.load(file_path, self.project)
+            self.project.file_path = file_path
+
+            # уведомляем UI, что данные появились
+            if self.project.raw_data is not None:
+                self.data_loaded.emit(self.project.raw_data)
+
+            self.info_changed.emit("Проект успешно открыт.")
+
+        except Exception as e:
+            self.error_occurred.emit(str(e))
