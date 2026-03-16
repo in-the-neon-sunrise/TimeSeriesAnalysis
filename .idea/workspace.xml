@@ -4,19 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="basic data demonstration">
-      <change afterPath="$PROJECT_DIR$/ui/pages/base_page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/pages/clustering_page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/pages/features_page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/pages/markov_page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/pages/preprocessing_page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/pages/report_page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ui/pages/segmentation_page.py" afterDir="false" />
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="everything becomes better">
+      <change afterPath="$PROJECT_DIR$/services/feature_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ui/models/dataframe_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/models/pandas_table_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/models/pandas_table_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/navigation_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/navigation_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/data_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/data_page.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/pages/clustering_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/clustering_page.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/pages/features_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/features_page.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/pages/markov_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/markov_page.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/viewmodels/data_vm.py" beforeDir="false" afterPath="$PROJECT_DIR$/viewmodels/data_vm.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,6 +47,9 @@
     &quot;accountId&quot;: &quot;17e20b8d-8556-48b5-977a-00d19400db44&quot;
   }
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -61,15 +61,26 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.clustering_page.executor": "Run",
     "Python.data_page.executor": "Run",
     "Python.main.executor": "Run",
     "Python.main_window.executor": "Run",
+    "Python.navigation_panel.executor": "Run",
+    "Python.preprocessing_page.executor": "Run",
+    "Python.project_repository.executor": "Run",
+    "Python.report_page.executor": "Run",
+    "Python.report_service.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "app-skeleton"
+    "git-widget-placeholder": "app-preprocessing",
+    "last_opened_file_path": "C:/Users/Elizabeth/PycharmProjects/TimeSeriesAnalysis/assets"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\assets" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\ui\models" />
     </key>
@@ -105,7 +116,31 @@
       <option name="project" value="LOCAL" />
       <updated>1768398304885</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="still saving">
+      <option name="closed" value="true" />
+      <created>1770063480587</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1770063480587</updated>
+    </task>
+    <task id="LOCAL-00004" summary="basic data demonstration">
+      <option name="closed" value="true" />
+      <created>1771961460016</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1771961460016</updated>
+    </task>
+    <task id="LOCAL-00005" summary="everything becomes better">
+      <option name="closed" value="true" />
+      <created>1772027734892</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1772027734892</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -136,7 +171,9 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="basic file loading" />
+    <MESSAGE value="still saving" />
     <MESSAGE value="basic data demonstration" />
-    <option name="LAST_COMMIT_MESSAGE" value="basic data demonstration" />
+    <MESSAGE value="everything becomes better" />
+    <option name="LAST_COMMIT_MESSAGE" value="everything becomes better" />
   </component>
 </project>

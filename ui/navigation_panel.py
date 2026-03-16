@@ -3,6 +3,7 @@ from PySide6.QtCore import Signal
 
 class NavigationPanel(QWidget):
     data_clicked = Signal()
+    primary_analysis_clicked = Signal()
     preprocessing_clicked = Signal()
     features_clicked = Signal()
     segmentation_clicked = Signal()
@@ -16,6 +17,7 @@ class NavigationPanel(QWidget):
         layout = QVBoxLayout(self)
 
         self.data_btn = QPushButton("Импорт данных")
+        self.primary_analysis_btn = QPushButton("Первичный анализ")
         self.preprocessing_btn = QPushButton("Предобработка")
         self.features_btn = QPushButton("Признаки")
         self.segmentation_btn = QPushButton("Сегментация")
@@ -24,6 +26,7 @@ class NavigationPanel(QWidget):
         self.report_btn = QPushButton("Отчет")
 
         self.data_btn.clicked.connect(self.data_clicked.emit)
+        self.primary_analysis_btn.clicked.connect(self.primary_analysis_clicked.emit)
         self.preprocessing_btn.clicked.connect(self.preprocessing_clicked.emit)
         self.features_btn.clicked.connect(self.features_clicked.emit)
         self.segmentation_btn.clicked.connect(self.segmentation_clicked.emit)
@@ -32,6 +35,7 @@ class NavigationPanel(QWidget):
         self.report_btn.clicked.connect(self.report_clicked.emit)
 
         layout.addWidget(self.data_btn)
+        layout.addWidget(self.primary_analysis_btn)
         layout.addWidget(self.preprocessing_btn)
         layout.addWidget(self.features_btn)
         layout.addWidget(self.segmentation_btn)
