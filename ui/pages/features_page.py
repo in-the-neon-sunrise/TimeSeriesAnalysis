@@ -1,15 +1,13 @@
 from PySide6.QtWidgets import (
-    QLabel, QVBoxLayout, QHBoxLayout, QGroupBox,
-    QCheckBox, QComboBox, QPushButton, QSpinBox,
-    QScrollArea, QWidget
+    QLabel, QVBoxLayout, QGroupBox,
+    QCheckBox, QPushButton, QSpinBox,
+    QScrollArea, QWidget, QTableView
 )
 
 from matplotlib.figure import Figure
 from ui.canvas import ScrollFriendlyCanvas
 from ui.pages.base_page import BasePage
 from services.feature_service import FeatureService
-from PySide6.QtWidgets import QTableView
-from PySide6.QtCore import QAbstractTableModel, Qt
 from ui.models.dataframe_model import DataFrameModel
 
 
@@ -62,7 +60,7 @@ class FeaturesPage(BasePage):
 
         # ---------------- PLOT ----------------
 
-        self.figure = Figure(figsize=(5, 3))
+        self.figure = Figure(figsize=(8, 5), constrained_layout=True)
         self.canvas = ScrollFriendlyCanvas(self.figure)
         self.canvas.setMinimumHeight(300)
 
@@ -74,6 +72,7 @@ class FeaturesPage(BasePage):
         layout.addWidget(figure_container)
 
         self.table = QTableView()
+        self.table.setMinimumHeight(220)
         layout.addWidget(QLabel("Сгенерированные признаки"))
         layout.addWidget(self.table)
 
@@ -320,13 +319,14 @@ class FeaturesPage(BasePage):
         im = ax.imshow(corr, aspect="auto")
 
         ax.set_xticks(range(len(corr.columns)))
-        ax.set_xticklabels(corr.columns, rotation=45)
+        ax.set_xticklabels(corr.columns, rotation=45, ha="right")
 
         ax.set_yticks(range(len(corr.columns)))
         ax.set_yticklabels(corr.columns)
 
         ax.set_title("Feature correlation")
 
-        self.figure.colorbar(im)
+        self.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        self.figure.tight_layout()
 
         self.canvas.draw()
