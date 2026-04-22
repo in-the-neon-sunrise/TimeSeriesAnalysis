@@ -12,6 +12,7 @@ class ProjectService:
         self.segments: Optional[pd.DataFrame] = None
         self.clusters: Optional[pd.DataFrame] = None
         self.markov_matrix: Optional[pd.DataFrame] = None
+        self.markov_result: Optional[dict] = None
 
         # Параметры шагов
         self.parameters: Dict[str, dict] = {}
@@ -29,6 +30,7 @@ class ProjectService:
         self.segments = None
         self.clusters = None
         self.markov_matrix = None
+        self.markov_result = None
         self.parameters.clear()
 
     def set_processed_data(self, df: pd.DataFrame, params: dict = None):
@@ -53,6 +55,11 @@ class ProjectService:
 
     def set_markov_matrix(self, df: pd.DataFrame, params: dict = None):
         self.markov_matrix = df
+        if params:
+            self.parameters["markov"] = params
+
+    def set_markov_result(self, result: dict, params: dict = None):
+        self.markov_result = result
         if params:
             self.parameters["markov"] = params
 
