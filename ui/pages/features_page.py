@@ -40,12 +40,15 @@ class FeaturesPage(BasePage):
 
         # ---------------- COLUMN SELECTOR ----------------
 
-        layout.addWidget(QLabel("Анализируемый столбец:"))
+        layout.addWidget(QLabel("Выберите столбцы:"))
 
-        self.column_selector = QComboBox()
-        self.column_selector.setEnabled(False)
+        self.columns_container = QVBoxLayout()
+        self.column_checkboxes = []
 
-        layout.addWidget(self.column_selector)
+        columns_widget = QWidget()
+        columns_widget.setLayout(self.columns_container)
+
+        layout.addWidget(columns_widget)
 
         # ---------------- WINDOW PARAMETERS ----------------
 
@@ -182,57 +185,38 @@ class FeaturesPage(BasePage):
 
         return group
 
-    # ============================================================
-    # DATA LOADED
-    # ============================================================
 
     def on_data_loaded(self, df):
 
         self.df = df
 
-        self.column_selector.clear()
+        # очистка старых чекбоксов
+        for cb in self.column_checkboxes:
+            self.columns_container.removeWidget(cb)
+            cb.deleteLater()
+
+        self.column_checkboxes = []
 
         numeric_columns = df.select_dtypes(include="number").columns
 
-        self.column_selector.addItems(numeric_columns)
+        for col in numeric_columns:
+            cb = QCheckBox(col)
+            self.columns_container.addWidget(cb)
+            self.column_checkboxes.append(cb)
 
-        self.column_selector.setEnabled(True)
-
-        self.update_plot()
-
-    # ============================================================
-    # PLOT
-    # ============================================================
-
-    def update_plot(self):
-
-        if self.df is None:
-            return
-
-        column = self.column_selector.currentText()
-
-        if column == "":
-            return
-
-        self.figure.clear()
-
-        ax = self.figure.add_subplot(111)
-        ax.plot(self.df[column].values)
-
-        ax.set_title("Временной ряд")
-
-        self.canvas.draw()
-
-    # ============================================================
-    # GENERATE FEATURES
-    # ============================================================
+    def get_selected_columns(self):
+        return [cb.text() for cb in self.column_checkboxes if cb.isChecked()]
 
     def generate_features(self):
 
         if self.df is None:
             return
 
-        column = self.column_selector.currentText()
+        selected_columns = self.get_selected_columns()
+
+        if not selected_columns:
+            print("Не выбраны столбцы")
+            return
 
         window = self.window_size.value()
         step = self.step_size.value()
@@ -241,58 +225,54 @@ class FeaturesPage(BasePage):
 
         if self.mean_cb.isChecked():
             selected_features.append("mean")
-
         if self.std_cb.isChecked():
             selected_features.append("std")
-
         if self.var_cb.isChecked():
             selected_features.append("var")
-
         if self.min_cb.isChecked():
             selected_features.append("min")
-
         if self.max_cb.isChecked():
             selected_features.append("max")
-
         if self.skew_cb.isChecked():
             selected_features.append("skew")
-
         if self.kurt_cb.isChecked():
             selected_features.append("kurt")
-
         if self.diff_cb.isChecked():
             selected_features.append("diff")
-
         if self.gradient_cb.isChecked():
             selected_features.append("gradient")
-
         if self.roc_cb.isChecked():
             selected_features.append("roc")
-
         if self.rms_cb.isChecked():
             selected_features.append("rms")
-
         if self.energy_cb.isChecked():
             selected_features.append("energy")
-
         if self.ptp_cb.isChecked():
             selected_features.append("ptp")
 
-        series = self.df[column]
+        import pandas as pd
 
-        features_df = FeatureService.extract_features(
-            series,
-            window,
-            step,
-            selected_features
-        )
-        self.features_df = features_df
+        all_features = []
 
-        print(features_df.head())
+        for col in selected_columns:
+            series = self.df[col]
 
-        features_df = features_df
+            features_df = FeatureService.extract_features(
+                series,
+                window,
+                step,
+                selected_features
+            )
 
-        model = DataFrameModel(features_df)
+            # 👉 переименовываем колонки
+            features_df = features_df.add_prefix(f"{col}_")
+
+            all_features.append(features_df)
+
+        # 👉 объединяем по колонкам
+        self.features_df = pd.concat(all_features, axis=1)
+
+        model = DataFrameModel(self.features_df)
         self.table.setModel(model)
 
         self.update_feature_plot()
@@ -303,7 +283,11 @@ class FeaturesPage(BasePage):
         if self.df is None:
             return
 
-        column = self.column_selector.currentText()
+        selected_columns = self.get_selected_columns()
+        if not selected_columns:
+            return
+
+        column = selected_columns[0]
 
         values = self.df[column].values
 

@@ -24,7 +24,6 @@ class DataViewModel(BaseViewModel):
 
             # сохраняем в ProjectService
             self.project.set_raw_data(df, file_path)
-            self.data_loaded.emit(df)
             # строим профиль
             profile = build_data_profile(df)
             # уведомляем UI
