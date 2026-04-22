@@ -41,7 +41,7 @@ class ProjectService:
         if params:
             self.parameters["features"] = params
 
-    def set_segments(self, df: pd.DataFrame, params: dict = None):
+    def set_segments(self, df: Optional[pd.DataFrame], params: dict = None):
         self.segments = df
         if params:
             self.parameters["segmentation"] = params

@@ -270,6 +270,15 @@ class FeaturesPage(BasePage):
 
         # 👉 объединяем по колонкам
         self.features_df = pd.concat(all_features, axis=1)
+        self.vm.project.set_features(
+            self.features_df,
+            params={
+                "window_size": window,
+                "step_size": step,
+                "selected_columns": selected_columns,
+                "selected_features": selected_features,
+            }
+        )
 
         model = DataFrameModel(self.features_df)
         self.table.setModel(model)
