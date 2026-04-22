@@ -1,7 +1,8 @@
 import numpy
 import pandas
 
-from .. import stageprocess, clustquality
+from external.SDA import clustquality, stageprocess
+
 
 def edge_statistics(features: numpy.ndarray, st_edges: numpy.ndarray) -> pandas.DataFrame:
     return {

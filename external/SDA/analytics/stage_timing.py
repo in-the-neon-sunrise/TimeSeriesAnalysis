@@ -2,7 +2,8 @@ import mne
 import numpy
 import pandas
 
-from .. import stageprocess
+from external.SDA import stageprocess
+
 
 def stage_timing(edges: numpy.ndarray, epochs: mne.Epochs) -> pandas.DataFrame:
     items = [ ]

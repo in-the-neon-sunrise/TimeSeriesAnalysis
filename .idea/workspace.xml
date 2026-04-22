@@ -4,8 +4,46 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="stop wheel changes">
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="connect sda">
+      <change afterPath="$PROJECT_DIR$/external/SDA/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/segmentation/sda_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/segmentation/sda_adapter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/QSDA.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/QSDA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/SDA.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/SDA.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/IV/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/IV/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/IV/calc_IV.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/IV/calc_IV.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/IV/calc_IV_clust.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/IV/calc_IV_clust.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/best_result.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/best_result.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/best_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/best_results.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/draw_sources_heatmap.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/draw_sources_heatmap.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/edge_statistics.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/edge_statistics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/plot_eeg_stages.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/plot_eeg_stages.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/plot_features.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/plot_features.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/plot_stats.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/plot_stats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/stage_timing.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/stage_timing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/analytics/templates/draw_sources_heatmap.svg" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/analytics/templates/draw_sources_heatmap.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/clustquality/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/clustquality/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/clustquality/calc_stage_metr_noground.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/clustquality/calc_stage_metr_noground.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/clustquality/cluster_metrics_ground.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/clustquality/cluster_metrics_ground.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/clustquality/cluster_metrics_noground.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/clustquality/cluster_metrics_noground.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/calc_stage_distances.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/calc_stage_distances.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/clusters_dist_ward.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/clusters_dist_ward.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/form_edges_all.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/form_edges_all.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/form_stage_bands.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/form_stage_bands.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/form_stages.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/form_stages.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/merge_stages.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/merge_stages.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/merge_stages_1st_step.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/merge_stages_1st_step.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/merge_stages_2nd_step.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/merge_stages_2nd_step.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/stage1.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/stage1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/stageprocess/stage2.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/stage2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/topology/DissimilarityFeatureExtractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/topology/DissimilarityFeatureExtractor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/topology/FeatureCalculator.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/topology/FeatureCalculator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/topology/OverallFeatureExtractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/topology/OverallFeatureExtractor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/topology/PerChannelFeatureExtractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/topology/PerChannelFeatureExtractor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/external/sda/topology/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/topology/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,6 +91,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.QSDA.executor": "Run",
     "Python.clustering_page.executor": "Run",
     "Python.data_page.executor": "Run",
     "Python.features_page.executor": "Run",
@@ -67,14 +106,19 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "app-preprocessing",
-    "last_opened_file_path": "C:/Users/Elizabeth/PycharmProjects/TimeSeriesAnalysis/assets"
+    "last_opened_file_path": "C:/Users/Elizabeth/PycharmProjects/TimeSeriesAnalysis/external"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\external" />
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\external\sda" />
       <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\assets" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\external\sda" />
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\external" />
+      <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\external\SDA1" />
       <recent name="C:\Users\Elizabeth\PycharmProjects\TimeSeriesAnalysis\ui\models" />
     </key>
   </component>
@@ -157,7 +201,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776860624383</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="connect sda">
+      <option name="closed" value="true" />
+      <created>1776862618971</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1776862618971</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -194,6 +246,7 @@
     <MESSAGE value="almost all workflow" />
     <MESSAGE value="aaa" />
     <MESSAGE value="stop wheel changes" />
-    <option name="LAST_COMMIT_MESSAGE" value="stop wheel changes" />
+    <MESSAGE value="connect sda" />
+    <option name="LAST_COMMIT_MESSAGE" value="connect sda" />
   </component>
 </project>

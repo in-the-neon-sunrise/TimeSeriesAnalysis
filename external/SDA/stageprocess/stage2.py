@@ -13,7 +13,7 @@ from .form_stage_bands import form_stage_bands
 from .merge_stages import merge_stages, StageMerging
 from .calc_stage_distances import calc_stage_distances_ward
 from .calc_stage_distances import calc_stage_distances_centroid
-from ..clustquality import cluster_metrics_noground, calc_stage_metr_noground
+from external.SDA.clustquality import cluster_metrics_noground, calc_stage_metr_noground
 
 def stage2_iter(
     features: numpy.ndarray,

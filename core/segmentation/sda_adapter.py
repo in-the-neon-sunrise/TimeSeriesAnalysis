@@ -5,7 +5,7 @@ from typing import Any, Dict, Tuple
 import numpy as np
 import pandas as pd
 
-from external.sda.SDA import SDA
+from external import SDA
 
 
 class SDAAdapter:

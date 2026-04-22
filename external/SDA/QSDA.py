@@ -8,10 +8,10 @@ import joblib
 import pandas
 import sklearn.preprocessing
 
-from .SDA import SDA
-from .SDA import StageMerging
-from SDA.clustquality import calc_stage_metr_noground
-from SDA.stageprocess import merge_stages_1st_step_iter, merge_stages_2nd_step_iter
+from external.SDA import SDA
+from external.SDA import StageMerging
+from external.SDA.clustquality import calc_stage_metr_noground
+from external.SDA.stageprocess import merge_stages_1st_step_iter, merge_stages_2nd_step_iter
 
 
 class ScoreFunction(enum.Enum):

@@ -3,7 +3,7 @@ import typing
 import numpy
 import sklearn.metrics
 
-from .. import stageprocess
+from external.SDA import stageprocess
 
 # Define the metrics which require true and predicted labels
 cluster_metrics = [

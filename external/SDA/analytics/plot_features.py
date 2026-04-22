@@ -4,7 +4,8 @@ import numpy
 import pandas
 import matplotlib.pyplot as plt
 
-from .. import stageprocess
+from external.SDA import stageprocess
+
 
 def plot_features(df_features: pandas.DataFrame, edges: numpy.ndarray) -> plt.Figure:
     stats = df_features.describe()
