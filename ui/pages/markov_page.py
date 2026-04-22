@@ -1,21 +1,42 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import numpy as np
+from matplotlib.figure import Figure
 from PySide6.QtWidgets import (
-    QLabel, QVBoxLayout, QHBoxLayout, QGroupBox,
-    QPushButton, QComboBox, QSpinBox,
-    QScrollArea, QWidget, QTableWidget, QTableWidgetItem
+    QCheckBox,
+    QFileDialog,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
 )
 
-from PySide6.QtCore import QTimer
-import numpy as np
-
+from ui.canvas import ScrollFriendlyCanvas
+from ui.models.dataframe_model import DataFrameModel
 from ui.pages.base_page import BasePage
+from viewmodels.markov_vm import MarkovViewModel
 
 
 class MarkovPage(BasePage):
-
     def __init__(self, data_vm):
         super().__init__()
+        self.vm = MarkovViewModel(data_vm.project)
+        self.current_result = None
 
-        self.vm = data_vm
+        self.vm.source_info_ready.connect(self._render_source_info)
+        self.vm.model_ready.connect(self._show_result)
+        self.vm.model_reset.connect(self._clear_results)
+        self.vm.error_occurred.connect(self._show_error)
+        self.vm.info_changed.connect(self._show_info)
 
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
@@ -23,203 +44,210 @@ class MarkovPage(BasePage):
         content = QWidget()
         scroll.setWidget(content)
 
-        main_layout = QVBoxLayout(content)
-        main_layout.setSpacing(14)
+        layout = QVBoxLayout(content)
+        layout.setSpacing(12)
 
-        title = QLabel("Анализ состояний (Марковские цепи)")
+        title = QLabel("Markov modeling")
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
-        main_layout.addWidget(title)
+        layout.addWidget(title)
 
-        body_layout = QHBoxLayout()
-        main_layout.addLayout(body_layout)
+        layout.addWidget(self._build_source_group())
+        layout.addWidget(self._build_params_group())
+        layout.addLayout(self._build_actions())
+        layout.addWidget(self._build_results_group())
+        layout.addStretch()
 
-        # ---------------- НАСТРОЙКИ ----------------
+        root = QVBoxLayout(self)
+        root.addWidget(scroll)
 
-        controls = QVBoxLayout()
+    def on_enter(self):
+        self.vm.refresh_source_info()
 
-        controls.addWidget(self._order_group())
-        controls.addWidget(self._params_group())
+    def _build_source_group(self):
+        group = QGroupBox("Источник данных")
+        grid = QGridLayout(group)
+
+        self.source_label = QLabel("Источник: clusters")
+        self.source_status = QLabel("Статус: ожидание")
+        self.sequence_len_label = QLabel("Длина последовательности: 0")
+        self.unique_states_label = QLabel("Уникальных состояний: 0")
+
+        grid.addWidget(self.source_label, 0, 0)
+        grid.addWidget(self.source_status, 1, 0, 1, 2)
+        grid.addWidget(self.sequence_len_label, 2, 0)
+        grid.addWidget(self.unique_states_label, 2, 1)
+        return group
+
+    def _build_params_group(self):
+        group = QGroupBox("Параметры")
+        grid = QGridLayout(group)
+
+        self.order_spin = QSpinBox()
+        self.order_spin.setRange(1, 10)
+        self.order_spin.setValue(1)
+
+        self.min_frequency_spin = QSpinBox()
+        self.min_frequency_spin.setRange(1, 1000)
+        self.min_frequency_spin.setValue(1)
+
+        self.normalize_cb = QCheckBox("Нормализовать в вероятности")
+        self.normalize_cb.setChecked(True)
+
+        self.sequential_cb = QCheckBox("Учитывать только последовательные переходы")
+        self.sequential_cb.setChecked(True)
+
+        grid.addWidget(QLabel("Порядок цепи"), 0, 0)
+        grid.addWidget(self.order_spin, 0, 1)
+        grid.addWidget(QLabel("Минимальная частота перехода"), 1, 0)
+        grid.addWidget(self.min_frequency_spin, 1, 1)
+        grid.addWidget(self.normalize_cb, 2, 0, 1, 2)
+        grid.addWidget(self.sequential_cb, 3, 0, 1, 2)
+
+        return group
+
+    def _build_actions(self):
+        row = QHBoxLayout()
 
         self.run_btn = QPushButton("Построить модель")
-        self.run_btn.clicked.connect(self.run_model)
-        controls.addWidget(self.run_btn)
+        self.reset_btn = QPushButton("Сбросить результат")
+        self.export_btn = QPushButton("Экспорт матрицы CSV")
 
-        self.export_btn = QPushButton("Экспорт результатов")
-        controls.addWidget(self.export_btn)
+        self.run_btn.clicked.connect(self._run_model)
+        self.reset_btn.clicked.connect(self.vm.reset_result)
+        self.export_btn.clicked.connect(self._export_csv)
 
-        controls.addStretch()
+        row.addWidget(self.run_btn)
+        row.addWidget(self.reset_btn)
+        row.addWidget(self.export_btn)
+        return row
 
-        body_layout.addLayout(controls, 1)
+    def _build_results_group(self):
+        group = QGroupBox("Результаты")
+        layout = QVBoxLayout(group)
 
-        # ---------------- РЕЗУЛЬТАТЫ ----------------
+        self.summary_label = QLabel("Результаты еще не рассчитаны.")
+        layout.addWidget(self.summary_label)
 
-        results_layout = QVBoxLayout()
+        layout.addWidget(QLabel("Transition counts"))
+        self.counts_table = QTableView()
+        self.counts_table.setMinimumHeight(180)
+        layout.addWidget(self.counts_table)
 
-        results_layout.addWidget(QLabel("Матрица переходов"))
+        layout.addWidget(QLabel("Transition probabilities"))
+        self.prob_table = QTableView()
+        self.prob_table.setMinimumHeight(180)
+        layout.addWidget(self.prob_table)
 
-        self.transition_table = QTableWidget()
-        results_layout.addWidget(self.transition_table)
+        layout.addWidget(QLabel("Transitions (long-form)"))
+        self.long_table = QTableView()
+        self.long_table.setMinimumHeight(180)
+        layout.addWidget(self.long_table)
 
-        results_layout.addWidget(QLabel("Стационарное распределение"))
-
-        self.stationary_table = QTableWidget()
-        self.stationary_table.setColumnCount(2)
-        self.stationary_table.setHorizontalHeaderLabels([
-            "State",
-            "Probability"
-        ])
-        results_layout.addWidget(self.stationary_table)
-
-        results_layout.addWidget(QLabel("Основные характеристики"))
-
-        self.metrics_table = QTableWidget()
-        self.metrics_table.setColumnCount(2)
-        self.metrics_table.setHorizontalHeaderLabels([
-            "Metric",
-            "Value"
-        ])
-        results_layout.addWidget(self.metrics_table)
-
-        body_layout.addLayout(results_layout, 2)
-
-        root_layout = QVBoxLayout(self)
-        root_layout.addWidget(scroll)
-
-    # ---------------- ORDER ----------------
-
-    def _order_group(self):
-
-        group = QGroupBox("Параметры модели")
-
-        layout = QVBoxLayout()
-
-        layout.addWidget(QLabel("Порядок цепи"))
-
-        self.order_box = QComboBox()
-        self.order_box.addItems(["1", "2"])
-
-        layout.addWidget(self.order_box)
-
-        group.setLayout(layout)
+        self.figure = Figure(figsize=(8, 4), constrained_layout=True)
+        self.canvas = ScrollFriendlyCanvas(self.figure)
+        self.canvas.setMinimumHeight(280)
+        layout.addWidget(self.canvas)
 
         return group
 
-    # ---------------- PARAMS ----------------
+    def _run_model(self):
+        self.vm.build_model(
+            order=self.order_spin.value(),
+            normalize=self.normalize_cb.isChecked(),
+            sequential_only=self.sequential_cb.isChecked(),
+            min_frequency=self.min_frequency_spin.value(),
+        )
 
-    def _params_group(self):
+    def _show_result(self, result):
+        self.current_result = result
+        self.counts_table.setModel(DataFrameModel(result.transition_counts.reset_index().rename(columns={"index": "history_state"})))
+        self.prob_table.setModel(DataFrameModel(result.transition_probabilities.reset_index().rename(columns={"index": "history_state"})))
+        self.long_table.setModel(DataFrameModel(result.transitions_long_table))
 
-        group = QGroupBox("Дополнительные параметры")
-
-        layout = QVBoxLayout()
-
-        layout.addWidget(QLabel("Минимальное число переходов"))
-
-        self.min_transitions = QSpinBox()
-        self.min_transitions.setRange(1, 50)
-        self.min_transitions.setValue(5)
-
-        layout.addWidget(self.min_transitions)
-
-        group.setLayout(layout)
-
-        return group
-
-    # ---------------- RUN MODEL ----------------
-
-    def run_model(self):
-
-        self.run_btn.setEnabled(False)
-        self.run_btn.setText("Оценка модели...")
-
-        QTimer.singleShot(1500, self.generate_results)
-
-    # ---------------- GENERATE RESULTS ----------------
-
-    def generate_results(self):
-
-        states = np.random.randint(3, 6)
-
-        matrix = np.random.rand(states, states)
-        matrix = matrix / matrix.sum(axis=1, keepdims=True)
-
-        self.populate_transition_matrix(matrix)
-        self.populate_stationary(matrix)
-        self.populate_metrics(states)
-
-        self.run_btn.setEnabled(True)
-        self.run_btn.setText("Построить модель")
-
-    # ---------------- TRANSITION MATRIX ----------------
-
-    def populate_transition_matrix(self, matrix):
-
-        n = matrix.shape[0]
-
-        self.transition_table.setRowCount(n)
-        self.transition_table.setColumnCount(n)
-
-        headers = [f"S{i}" for i in range(n)]
-
-        self.transition_table.setHorizontalHeaderLabels(headers)
-        self.transition_table.setVerticalHeaderLabels(headers)
-
-        for i in range(n):
-            for j in range(n):
-
-                value = matrix[i, j]
-
-                self.transition_table.setItem(
-                    i,
-                    j,
-                    QTableWidgetItem(f"{value:.3f}")
-                )
-
-    # ---------------- STATIONARY ----------------
-
-    def populate_stationary(self, matrix):
-
-        eigvals, eigvecs = np.linalg.eig(matrix.T)
-
-        stat = np.real(eigvecs[:, np.isclose(eigvals, 1)])
-        stat = stat[:, 0]
-        stat = stat / stat.sum()
-
-        n = len(stat)
-
-        self.stationary_table.setRowCount(n)
-
-        for i in range(n):
-
-            self.stationary_table.setItem(
-                i, 0, QTableWidgetItem(f"S{i}")
+        summary = result.summary
+        self.summary_label.setText(
+            " | ".join(
+                [
+                    f"order={summary.get('order')}",
+                    f"sequence={summary.get('sequence_length')}",
+                    f"states={summary.get('unique_state_count')}",
+                    f"transitions={summary.get('observed_transitions')}",
+                    f"sparsity={summary.get('sparsity', 0):.3f}",
+                    f"entropy={summary.get('weighted_entropy', 0):.3f}",
+                ]
             )
+        )
+        self._draw_heatmap(result.transition_probabilities)
 
-            self.stationary_table.setItem(
-                i, 1, QTableWidgetItem(f"{stat[i]:.3f}")
-            )
+    def _draw_heatmap(self, probabilities_df):
+        self.figure.clear()
+        ax = self.figure.add_subplot(111)
 
-    # ---------------- METRICS ----------------
+        if probabilities_df.empty:
+            ax.text(0.5, 0.5, "Нет переходов для отображения", ha="center", va="center")
+            ax.axis("off")
+            self.canvas.draw_idle()
+            return
 
-    def populate_metrics(self, states):
+        display_df = probabilities_df
+        max_rows = 25
+        max_cols = 25
+        if len(display_df.index) > max_rows:
+            display_df = display_df.iloc[:max_rows, :]
+        if len(display_df.columns) > max_cols:
+            display_df = display_df.iloc[:, :max_cols]
 
-        metrics = [
-            ("Number of states", states),
-            ("Observed transitions", np.random.randint(150, 400)),
-            ("Entropy rate", np.random.uniform(0.5, 1.5)),
-            ("Average state duration", np.random.uniform(3, 12))
-        ]
+        matrix = display_df.to_numpy(dtype=float)
+        img = ax.imshow(matrix, aspect="auto", cmap="viridis", vmin=0, vmax=max(float(np.max(matrix)), 1e-9))
+        ax.set_title("Heatmap переходных вероятностей")
+        ax.set_xlabel("Next state")
+        ax.set_ylabel("History state")
 
-        self.metrics_table.setRowCount(len(metrics))
+        ax.set_xticks(range(len(display_df.columns)))
+        ax.set_xticklabels([str(c) for c in display_df.columns], rotation=45, ha="right", fontsize=7)
+        ax.set_yticks(range(len(display_df.index)))
+        ax.set_yticklabels([str(i) for i in display_df.index], fontsize=7)
 
-        for i, (name, value) in enumerate(metrics):
+        self.figure.colorbar(img, ax=ax, fraction=0.03, pad=0.02)
+        self.canvas.draw_idle()
 
-            if isinstance(value, float):
-                value = f"{value:.3f}"
+    def _export_csv(self):
+        if self.current_result is None:
+            self._show_error("Нет результата для экспорта.")
+            return
 
-            self.metrics_table.setItem(
-                i, 0, QTableWidgetItem(name)
-            )
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Экспорт матрицы вероятностей",
+            str(Path.home() / "markov_transition_probabilities.csv"),
+            "CSV Files (*.csv)",
+        )
+        if not file_path:
+            return
 
-            self.metrics_table.setItem(
-                i, 1, QTableWidgetItem(str(value))
-            )
+        try:
+            self.vm.export_probabilities_csv(file_path)
+            self._show_info(f"Экспортировано: {file_path}")
+        except Exception as exc:
+            self._show_error(str(exc))
+
+    def _render_source_info(self, info: dict):
+        self.source_label.setText(f"Источник: {info.get('source_name', 'clusters')}")
+        self.source_status.setText(f"Статус: {info.get('message', '')}")
+        self.sequence_len_label.setText(f"Длина последовательности: {info.get('sequence_length', 0)}")
+        self.unique_states_label.setText(f"Уникальных состояний: {info.get('unique_states', 0)}")
+
+    def _clear_results(self):
+        self.current_result = None
+        self.summary_label.setText("Результаты еще не рассчитаны.")
+        self.counts_table.setModel(None)
+        self.prob_table.setModel(None)
+        self.long_table.setModel(None)
+        self.figure.clear()
+        self.canvas.draw_idle()
+
+    def _show_error(self, message: str):
+        QMessageBox.critical(self, "Ошибка", message)
+
+    def _show_info(self, message: str):
+        QMessageBox.information(self, "Информация", message)
