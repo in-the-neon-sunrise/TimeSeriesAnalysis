@@ -97,6 +97,18 @@ class ProjectRepository:
             if row:
                 project.parameters = json.loads(row[0])
 
+        clustering_meta = project.parameters.get("clustering", {}) if hasattr(project, "parameters") else {}
+        if clustering_meta:
+            project.clustering_result = {
+                "method": clustering_meta.get("method"),
+                "params": clustering_meta.get("params", {}),
+                "selected_columns": clustering_meta.get("selected_columns", []),
+                "metrics": clustering_meta.get("metrics", {}),
+                "summary": clustering_meta.get("summary", {}),
+                "distance_metric": clustering_meta.get("distance_metric"),
+                "source_info": clustering_meta.get("source_info", {}),
+            }
+
         conn.close()
 
     def _load_markov_result(self, conn, tables, project):

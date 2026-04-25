@@ -1,5 +1,6 @@
 import pandas as pd
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
+
 
 class ProjectService:
     def __init__(self):
@@ -11,6 +12,7 @@ class ProjectService:
         self.features: Optional[pd.DataFrame] = None
         self.segments: Optional[pd.DataFrame] = None
         self.clusters: Optional[pd.DataFrame] = None
+        self.clustering_result: Optional[Dict[str, Any]] = None
         self.markov_matrix: Optional[pd.DataFrame] = None
         self.markov_result: Optional[dict] = None
 
@@ -20,7 +22,6 @@ class ProjectService:
         # Служебное
         self.file_path: Optional[str] = None
 
-
     def set_raw_data(self, df: pd.DataFrame, file_path=None):
         self.raw_data = df
         self.file_path = file_path
@@ -29,6 +30,7 @@ class ProjectService:
         self.features = None
         self.segments = None
         self.clusters = None
+        self.clustering_result = None
         self.markov_matrix = None
         self.markov_result = None
         self.parameters.clear()
@@ -48,7 +50,7 @@ class ProjectService:
         if params:
             self.parameters["segmentation"] = params
 
-    def set_clusters(self, df: pd.DataFrame, params: dict = None):
+    def set_clusters(self, df: Optional[pd.DataFrame], params: dict = None):
         self.clusters = df
         if params:
             self.parameters["clustering"] = params
