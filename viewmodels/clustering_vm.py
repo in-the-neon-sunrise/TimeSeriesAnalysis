@@ -48,19 +48,40 @@ class ClusteringViewModel(BaseViewModel):
 
     def run_clustering(self, method: str, selected_columns: List[str], params: Dict[str, Any]):
         try:
-            segments_df = self.project.segments
-            result = self.clustering_service.run_clustering(
-                segments_df=segments_df,
-                method=method,
-                selected_columns=selected_columns,
-                params=params,
-            )
-            self.current_result = result
-            self._persist_result(result)
-            self.clustering_ready.emit(result)
-            self.info_changed.emit("Кластеризация сегментов успешно выполнена.")
+            request = self.build_clustering_request(method, selected_columns, params)
+            result = self.execute_clustering(**request)
+            self.apply_clustering_result(result)
         except Exception as exc:
             self.error_occurred.emit(str(exc))
+
+    def build_clustering_request(self, method: str, selected_columns: List[str], params: Dict[str, Any]) -> Dict[
+        str, Any]:
+        segments_df = self.project.segments
+        if segments_df is None or segments_df.empty:
+            raise ValueError("Нет данных сегментации. Сначала выполните этап segmentation.")
+        return {
+            "segments_df": segments_df,
+            "method": method,
+            "selected_columns": selected_columns,
+            "params": params,
+        }
+
+    def execute_clustering(self, segments_df, method, selected_columns, params, progress_callback=None,
+                           is_cancelled=None):
+        return self.clustering_service.run_clustering(
+            segments_df=segments_df,
+            method=method,
+            selected_columns=selected_columns,
+            params=params,
+            progress_callback=progress_callback,
+            is_cancelled=is_cancelled,
+        )
+
+    def apply_clustering_result(self, result: ClusteringResult):
+        self.current_result = result
+        self._persist_result(result)
+        self.clustering_ready.emit(result)
+        self.info_changed.emit("Кластеризация сегментов успешно выполнена.")
 
     def reset_result(self):
         self.current_result = None

@@ -22,7 +22,10 @@ class SegmentationService:
         params: Dict[str, Any],
         input_kind: str = "features",
         timestamp_series: Optional[pd.Series] = None,
+        progress_callback=None,
+        is_cancelled=None,
     ) -> SegmentationResult:
+        self._check_cancel(is_cancelled)
         if features_df is None or features_df.empty:
             raise ValueError("Нет данных признаков для сегментации.")
 
@@ -36,9 +39,17 @@ class SegmentationService:
         features_for_algo = self._scale_if_needed(data_for_sda.values, bool(params.get("scale", False)))
         sda_params["scale"] = False
 
+        if progress_callback:
+            progress_callback.emit(15, "Подготовка данных завершена")
+        self._check_cancel(is_cancelled)
+
         results_table, stage1_results = self.adapter.run(features_for_algo, sda_params)
         if results_table is None or results_table.empty:
-            raise ValueError("SDA вернул пустой результат.")
+            raise ValueError("SDA вернул пустой результат")
+
+        if progress_callback:
+            progress_callback.emit(70, "SDA завершен, формирование результатов")
+        self._check_cancel(is_cancelled)
 
         best_row = self._select_best_result(results_table)
         edges = self._extract_edges(best_row.get("St_edges"), len(data_for_sda))
@@ -52,6 +63,9 @@ class SegmentationService:
         )
         segments_table = self._build_segments_table(segmented_data, used_columns)
         summary = self._build_summary(results_table, best_row, edges, segments_table)
+
+        if progress_callback:
+            progress_callback.emit(100, "Сегментация завершена")
 
         return SegmentationResult(
             input_kind=input_kind,
@@ -67,6 +81,12 @@ class SegmentationService:
             summary=summary,
             timestamp_column=timestamp_series.name if timestamp_series is not None else None,
         )
+
+
+    @staticmethod
+    def _check_cancel(is_cancelled):
+        if is_cancelled and is_cancelled():
+            raise RuntimeError("Задача отменена пользователем.")
 
     def _prepare_numeric_data(
         self,

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 from matplotlib.figure import Figure
+from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -18,12 +19,15 @@ from PySide6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QWidget,
+
+    QProgressBar,
 )
 
 from ui.canvas import ScrollFriendlyCanvas
 from ui.models.dataframe_model import DataFrameModel
 from ui.pages.base_page import BasePage
 from viewmodels.markov_vm import MarkovViewModel
+from workers.pipeline_worker import PipelineWorker
 
 
 class MarkovPage(BasePage):
@@ -31,6 +35,9 @@ class MarkovPage(BasePage):
         super().__init__()
         self.vm = MarkovViewModel(data_vm.project)
         self.current_result = None
+
+        self.thread_pool = QThreadPool.globalInstance()
+        self.current_worker = None
 
         self.vm.source_info_ready.connect(self._render_source_info)
         self.vm.model_ready.connect(self._show_result)
@@ -54,6 +61,13 @@ class MarkovPage(BasePage):
         layout.addWidget(self._build_source_group())
         layout.addWidget(self._build_params_group())
         layout.addLayout(self._build_actions())
+
+        self.status_label = QLabel("Статус: ожидание")
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.progress_bar)
         layout.addWidget(self._build_results_group())
         layout.addStretch()
 
@@ -109,14 +123,18 @@ class MarkovPage(BasePage):
         row = QHBoxLayout()
 
         self.run_btn = QPushButton("Построить модель")
+        self.cancel_btn = QPushButton("Отменить")
+        self.cancel_btn.setEnabled(False)
         self.reset_btn = QPushButton("Сбросить результат")
         self.export_btn = QPushButton("Экспорт матрицы CSV")
 
         self.run_btn.clicked.connect(self._run_model)
+        self.cancel_btn.clicked.connect(self._cancel_task)
         self.reset_btn.clicked.connect(self.vm.reset_result)
         self.export_btn.clicked.connect(self._export_csv)
 
         row.addWidget(self.run_btn)
+        row.addWidget(self.cancel_btn)
         row.addWidget(self.reset_btn)
         row.addWidget(self.export_btn)
         return row
@@ -151,12 +169,53 @@ class MarkovPage(BasePage):
         return group
 
     def _run_model(self):
-        self.vm.build_model(
+        request = self.vm.build_model_request(
             order=self.order_spin.value(),
             normalize=self.normalize_cb.isChecked(),
             sequential_only=self.sequential_cb.isChecked(),
             min_frequency=self.min_frequency_spin.value(),
         )
+        self._set_busy(True)
+        self.status_label.setText("Статус: выполняется построение модели")
+        self.progress_bar.setValue(0)
+
+        self.current_worker = PipelineWorker(self.vm.execute_model, **request)
+        self.current_worker.signals.progress.connect(self._on_progress)
+        self.current_worker.signals.result.connect(self._on_worker_result)
+        self.current_worker.signals.error.connect(self._on_worker_error)
+        self.current_worker.signals.finished.connect(self._on_worker_finished)
+        self.thread_pool.start(self.current_worker)
+
+    def _cancel_task(self):
+        if self.current_worker is not None:
+            self.current_worker.cancel()
+            self.status_label.setText("Статус: отмена...")
+
+    def _on_progress(self, value, message):
+        self.progress_bar.setValue(value)
+        self.status_label.setText(f"Статус: {message}")
+
+    def _on_worker_result(self, result):
+        self.vm.apply_model_result(result)
+
+    def _on_worker_error(self, message):
+        if "отменена" in message.lower():
+            self.status_label.setText("Статус: задача отменена")
+            return
+        self._show_error(message)
+
+    def _on_worker_finished(self, cancelled):
+        self._set_busy(False)
+        if cancelled:
+            self.status_label.setText("Статус: задача отменена")
+        elif self.progress_bar.value() < 100:
+            self.progress_bar.setValue(100)
+            self.status_label.setText("Статус: выполнено")
+        self.current_worker = None
+
+    def _set_busy(self, busy: bool):
+        self.run_btn.setEnabled(not busy)
+        self.cancel_btn.setEnabled(busy)
 
     def _show_result(self, result):
         self.current_result = result
@@ -213,7 +272,7 @@ class MarkovPage(BasePage):
 
     def _export_csv(self):
         if self.current_result is None:
-            self._show_error("Нет результата для экспорта.")
+            self._show_error("Нет результата для экспорта")
             return
 
         file_path, _ = QFileDialog.getSaveFileName(
@@ -239,7 +298,7 @@ class MarkovPage(BasePage):
 
     def _clear_results(self):
         self.current_result = None
-        self.summary_label.setText("Результаты еще не рассчитаны.")
+        self.summary_label.setText("Результаты еще не рассчитаны")
         self.counts_table.setModel(None)
         self.prob_table.setModel(None)
         self.long_table.setModel(None)

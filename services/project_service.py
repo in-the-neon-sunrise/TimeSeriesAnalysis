@@ -4,7 +4,6 @@ from typing import Optional, Dict, Any
 
 class ProjectService:
     def __init__(self):
-        # Исходные данные
         self.raw_data: Optional[pd.DataFrame] = None
 
         # Результаты этапов
@@ -21,10 +20,13 @@ class ProjectService:
 
         # Служебное
         self.file_path: Optional[str] = None
+        self.last_report_path: Optional[str] = None
+        self.last_report_generated_at: Optional[str] = None
 
     def set_raw_data(self, df: pd.DataFrame, file_path=None):
         self.raw_data = df
         self.file_path = file_path
+
         # При загрузке новых данных сбрасываем результаты
         self.processed_data = None
         self.features = None
@@ -34,6 +36,8 @@ class ProjectService:
         self.markov_matrix = None
         self.markov_result = None
         self.parameters.clear()
+        self.last_report_path = None
+        self.last_report_generated_at = None
 
     def set_processed_data(self, df: pd.DataFrame, params: dict = None):
         self.processed_data = df

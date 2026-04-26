@@ -20,7 +20,10 @@ class ClusteringService:
         method: str,
         selected_columns: List[str],
         params: Dict[str, Any],
+        progress_callback=None,
+        is_cancelled=None,
     ) -> ClusteringResult:
+        self._check_cancel(is_cancelled)
         if segments_df is None or segments_df.empty:
             raise ValueError("Нет данных сегментации. Сначала выполните этап segmentation.")
 
@@ -33,11 +36,19 @@ class ClusteringService:
 
         X, selected_columns = self._prepare_feature_matrix(segments_df, selected_columns)
         X = self._scale_if_needed(X, params.get("scale", False))
+        if progress_callback:
+            progress_callback.emit(25, "Данные для кластеризации подготовлены")
+
+        self._check_cancel(is_cancelled)
 
         if method_norm == "kmeans":
             labels, distance_metric, normalized_params = self._run_kmeans(X, params)
         else:
             labels, distance_metric, normalized_params = self._run_dbscan(X, params)
+
+        if progress_callback:
+            progress_callback.emit(70, "Кластеризация выполнена")
+        self._check_cancel(is_cancelled)
 
         clustered_segments = segments_df.copy()
         clustered_segments["cluster_id"] = labels
@@ -52,6 +63,8 @@ class ClusteringService:
             metrics=metrics,
             total_segments=len(clustered_segments),
         )
+        if progress_callback:
+            progress_callback.emit(100, "Формирование результатов завершено")
 
         return ClusteringResult(
             method=method_norm,
@@ -67,6 +80,11 @@ class ClusteringService:
                 "number_of_segments": len(segments_df),
             },
         )
+
+    @staticmethod
+    def _check_cancel(is_cancelled):
+        if is_cancelled and is_cancelled():
+            raise RuntimeError("Задача отменена")
 
     def _prepare_feature_matrix(self, segments_df: pd.DataFrame, selected_columns: List[str]) -> Tuple[np.ndarray, List[str]]:
         numeric_df = segments_df.select_dtypes(include="number")

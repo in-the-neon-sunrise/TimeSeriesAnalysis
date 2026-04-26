@@ -24,7 +24,10 @@ class MarkovService:
         normalize: bool = True,
         sequential_only: bool = True,
         min_frequency: int = 1,
+        progress_callback=None,
+        is_cancelled=None,
     ) -> MarkovResult:
+        self._check_cancel(is_cancelled)
         if order < 1:
             raise ValueError("Порядок цепи Маркова должен быть >= 1.")
         if source_df is None or source_df.empty:
@@ -36,18 +39,25 @@ class MarkovService:
                 f"Недостаточно наблюдений для порядка {order}. Нужно минимум {order + 1}, получено {len(sequence)}."
             )
 
-        counts_map, histories, next_states = self._count_transitions(sequence, order)
+        if progress_callback:
+            progress_callback.emit(15, "Последовательность состояний подготовлена")
+        counts_map, histories, next_states = self._count_transitions(sequence, order, progress_callback, is_cancelled)
         counts_df = self._to_matrix(counts_map, histories, next_states)
+        self._check_cancel(is_cancelled)
 
         if min_frequency > 1:
             counts_df = counts_df.where(counts_df >= min_frequency, other=0)
             counts_df = counts_df.loc[counts_df.sum(axis=1) > 0, counts_df.sum(axis=0) > 0]
 
         probs_df = self._normalize(counts_df) if normalize else counts_df.copy()
-        transitions_long = self._to_long(counts_df, probs_df)
+        if progress_callback:
+            progress_callback.emit(70, "Матрицы переходов построены")
+        transitions_long = self._to_long(counts_df, probs_df, is_cancelled)
 
         summary = self._build_summary(sequence, counts_df, probs_df, order)
         stationary = self._stationary_distribution(probs_df, order=order) if normalize else None
+        if progress_callback:
+            progress_callback.emit(100, "Markov-модель построена")
 
         return MarkovResult(
             order=order,
@@ -93,15 +103,22 @@ class MarkovService:
         self,
         sequence: List[Hashable],
         order: int,
+        progress_callback=None,
+        is_cancelled=None,
     ) -> Tuple[Dict[Tuple[Any, ...], Counter], List[Tuple[Any, ...]], List[Hashable]]:
         counts_map: Dict[Tuple[Any, ...], Counter] = defaultdict(Counter)
         observed_next_states = set()
+        total = max(1, len(sequence) - order)
 
-        for i in range(order, len(sequence)):
+        for idx, i in enumerate(range(order, len(sequence)), start=1):
+            self._check_cancel(is_cancelled)
             history = tuple(sequence[i - order:i])
             next_state = sequence[i]
             counts_map[history][next_state] += 1
             observed_next_states.add(next_state)
+
+        if progress_callback and idx % 100 == 0:
+            progress_callback.emit(15 + int((idx / total) * 45), f"Подсчет переходов: {idx}/{total}")
 
         histories = sorted(counts_map.keys(), key=lambda x: str(x))
         next_states = sorted(observed_next_states, key=str)
@@ -237,3 +254,8 @@ class MarkovService:
             if any(token in c_low for token in ("cluster", "state", "label")):
                 return c
         return None
+
+    @staticmethod
+    def _check_cancel(is_cancelled):
+        if is_cancelled and is_cancelled():
+            raise RuntimeError("Задача отменена")

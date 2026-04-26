@@ -5,20 +5,19 @@ import pandas as pd
 class FeatureService:
 
     @staticmethod
-    def extract_features(series, window_size, step, features):
+    def extract_features(series, window_size, step, features, progress_callback=None, is_cancelled=None):
 
         values = series.values
         n = len(values)
-
         rows = []
+        total = max(1, len(range(0, n - window_size + 1, step)))
 
-        for start in range(0, n - window_size + 1, step):
+        for idx, start in enumerate(range(0, n - window_size + 1, step), start=1):
+            if is_cancelled and is_cancelled():
+                raise RuntimeError("Задача отменена")
 
             window = values[start:start + window_size]
-
             row = {}
-
-            # ---------------- STAT FEATURES ----------------
 
             if "mean" in features:
                 row["mean"] = np.mean(window)
@@ -41,8 +40,6 @@ class FeatureService:
             if "kurt" in features:
                 row["kurt"] = pd.Series(window).kurt()
 
-            # ---------------- DYNAMIC FEATURES ----------------
-
             if "diff" in features:
                 diffs = np.diff(window)
                 row["diff_mean"] = np.mean(diffs)
@@ -55,8 +52,6 @@ class FeatureService:
                 roc = np.diff(window) / (window[:-1] + 1e-9)
                 row["roc_mean"] = np.mean(roc)
 
-            # ---------------- ENERGY FEATURES ----------------
-
             if "rms" in features:
                 row["rms"] = np.sqrt(np.mean(window ** 2))
 
@@ -68,6 +63,9 @@ class FeatureService:
 
             rows.append(row)
 
-        feature_df = pd.DataFrame(rows)
+            if progress_callback:
+                progress = int((idx / total) * 100)
+                progress_callback.emit(progress, f"Обработано окон: {idx}/{total}")
 
+        feature_df = pd.DataFrame(rows)
         return feature_df

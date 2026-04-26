@@ -14,12 +14,13 @@ from PySide6.QtGui import QAction
 from PySide6.QtGui import QKeySequence
 
 class MainWindow(QMainWindow):
-    def __init__(self, data_vm):
+    def __init__(self, data_vm, report_vm):
         super().__init__()
         self.setWindowTitle("Анализ сейсмологических данных")
         self.resize(1000, 600)
 
         self.data_vm = data_vm
+        self.report_vm = report_vm
 
         self.stack = QStackedWidget()
 
@@ -30,7 +31,7 @@ class MainWindow(QMainWindow):
         self.segmentation_page = SegmentationPage(self.data_vm)
         self.clustering_page = ClusteringPage(self.data_vm)
         self.markov_page = MarkovPage(self.data_vm)
-        self.report_page = ReportPage(self.data_vm)
+        self.report_page = ReportPage(self.report_vm)
 
         self.stack.addWidget(self.data_page)
         self.stack.addWidget(self.primary_analysis_page)

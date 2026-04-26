@@ -59,24 +59,41 @@ class MarkovViewModel(BaseViewModel):
 
     def build_model(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int):
         try:
-            source_df = self._get_source_df()
-            if source_df is None or source_df.empty:
-                raise ValueError("Нет данных кластеризации. Запустите clustering перед Markov modeling.")
-
-            result = self.markov_service.build_model(
-                source_df=source_df,
-                order=order,
-                normalize=normalize,
-                sequential_only=sequential_only,
-                min_frequency=min_frequency,
-            )
-            self.current_result = result
-            self._persist_result(result)
-
-            self.model_ready.emit(result)
-            self.info_changed.emit("Markov model успешно построена.")
+            request = self.build_model_request(order, normalize, sequential_only, min_frequency)
+            result = self.execute_model(**request)
+            self.apply_model_result(result)
         except Exception as exc:
             self.error_occurred.emit(str(exc))
+
+    def build_model_request(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int):
+        source_df = self._get_source_df()
+        if source_df is None or source_df.empty:
+            raise ValueError("Нет данных кластеризации. Запустите clustering перед Markov modeling.")
+        return {
+            "source_df": source_df,
+            "order": order,
+            "normalize": normalize,
+            "sequential_only": sequential_only,
+            "min_frequency": min_frequency,
+        }
+
+    def execute_model(self, source_df, order, normalize, sequential_only, min_frequency, progress_callback=None,
+                      is_cancelled=None):
+        return self.markov_service.build_model(
+            source_df=source_df,
+            order=order,
+            normalize=normalize,
+            sequential_only=sequential_only,
+            min_frequency=min_frequency,
+            progress_callback=progress_callback,
+            is_cancelled=is_cancelled,
+        )
+
+    def apply_model_result(self, result: MarkovResult):
+        self.current_result = result
+        self._persist_result(result)
+        self.model_ready.emit(result)
+        self.info_changed.emit("Markov model успешно построена.")
 
     def reset_result(self):
         self.current_result = None

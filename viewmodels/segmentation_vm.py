@@ -30,32 +30,47 @@ class SegmentationViewModel(BaseViewModel):
 
     def run_segmentation(self, selected_columns: List[str], params: Dict[str, Any]):
         try:
-            source_df = self._get_source_df()
-            if source_df is None:
-                raise ValueError("Нет данных признаков. Сначала выполните формирование признаков.")
-
-            timestamp_series = self._get_timestamp_series(source_df)
-
-            result = self.segmentation_service.run_segmentation(
-                features_df=source_df,
-                selected_columns=selected_columns,
-                params=params,
-                input_kind="features",
-                timestamp_series=timestamp_series,
-            )
-
-            self.current_result = result
-            self.project.set_segments(result.segmented_data, params=result.params)
-            self.project.parameters["segmentation_result"] = {
-                "best_result": result.best_result_row,
-                "edges": result.edges,
-                "summary": result.summary,
-                "selected_columns": result.selected_columns,
-            }
-            self.segmentation_ready.emit(result)
-            self.info_changed.emit("Сегментация SDA завершена успешно.")
+            request = self.build_segmentation_request(selected_columns, params)
+            result = self.execute_segmentation(**request)
+            self.apply_segmentation_result(result)
         except Exception as exc:
             self.error_occurred.emit(str(exc))
+
+    def build_segmentation_request(self, selected_columns: List[str], params: Dict[str, Any]) -> Dict[str, Any]:
+        source_df = self._get_source_df()
+        if source_df is None:
+            raise ValueError("Нет данных признаков. Сначала выполните формирование признаков")
+
+        return {
+            "source_df": source_df,
+            "selected_columns": selected_columns,
+            "params": params,
+            "timestamp_series": self._get_timestamp_series(source_df),
+        }
+
+    def execute_segmentation(self, source_df, selected_columns, params, timestamp_series, progress_callback=None,
+                             is_cancelled=None):
+        return self.segmentation_service.run_segmentation(
+            features_df=source_df,
+            selected_columns=selected_columns,
+            params=params,
+            input_kind="features",
+            timestamp_series=timestamp_series,
+            progress_callback=progress_callback,
+            is_cancelled=is_cancelled,
+        )
+
+    def apply_segmentation_result(self, result: SegmentationResult):
+        self.current_result = result
+        self.project.set_segments(result.segmented_data, params=result.params)
+        self.project.parameters["segmentation_result"] = {
+            "best_result": result.best_result_row,
+            "edges": result.edges,
+            "summary": result.summary,
+            "selected_columns": result.selected_columns,
+        }
+        self.segmentation_ready.emit(result)
+        self.info_changed.emit("Сегментация SDA завершена успешно")
 
     def reset_result(self):
         self.current_result = None
