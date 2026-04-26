@@ -14,6 +14,8 @@ from workers.pipeline_worker import PipelineWorker
 
 
 class FeaturesPage(BasePage):
+    PREVIEW_ROWS = 100
+    MAX_HEATMAP_FEATURES = 20
 
     def __init__(self, data_vm):
         super().__init__()
@@ -56,20 +58,30 @@ class FeaturesPage(BasePage):
         layout.addWidget(self._dynamic_features())
         layout.addWidget(self._energy_features())
 
+        self.heatmap_title = QLabel("Корреляция признаков")
+        self.heatmap_title.setStyleSheet("font-weight: bold;")
+        layout.addWidget(self.heatmap_title)
+
+        self.heatmap_info_label = QLabel("")
+        layout.addWidget(self.heatmap_info_label)
+
         self.figure = Figure(figsize=(8, 5), constrained_layout=True)
         self.canvas = ScrollFriendlyCanvas(self.figure)
         self.canvas.setMinimumHeight(300)
 
-        figure_container = QWidget()
-        figure_layout = QVBoxLayout(figure_container)
+        self.figure_container = QWidget()
+        figure_layout = QVBoxLayout(self.figure_container)
         figure_layout.setContentsMargins(0, 0, 0, 0)
         figure_layout.addWidget(self.canvas)
 
-        layout.addWidget(figure_container)
+        layout.addWidget(self.figure_container)
 
         self.table = QTableView()
         self.table.setMinimumHeight(220)
-        layout.addWidget(QLabel("Сгенерированные признаки"))
+        self.features_title = QLabel("Сгенерированные признаки")
+        layout.addWidget(self.features_title)
+        self.preview_info_label = QLabel("")
+        layout.addWidget(self.preview_info_label)
         layout.addWidget(self.table)
 
         self.status_label = QLabel("Статус: ожидание")
@@ -91,6 +103,7 @@ class FeaturesPage(BasePage):
 
         root_layout = QVBoxLayout(self)
         root_layout.addWidget(scroll)
+        self._hide_result_sections()
 
     def _window_group(self):
 
@@ -170,8 +183,11 @@ class FeaturesPage(BasePage):
 
 
     def on_data_loaded(self, df):
-
         self.df = df
+        self.features_df = None
+        self.table.setModel(None)
+        self.preview_info_label.setText("")
+        self._hide_result_sections()
 
         # очистка старых чекбоксов
         for cb in self.column_checkboxes:
@@ -187,6 +203,40 @@ class FeaturesPage(BasePage):
             self.columns_container.addWidget(cb)
             self.column_checkboxes.append(cb)
 
+    def on_enter(self):
+        self._sync_source_df()
+        self._refresh_column_checkboxes()
+
+    def _sync_source_df(self):
+        source_df, source_kind = self._get_feature_source_df()
+        self.df = source_df
+        return source_kind
+
+    def _get_feature_source_df(self):
+        processed = self.vm.project.processed_data
+        if processed is not None and not processed.empty:
+            return processed, "processed"
+
+        raw = self.vm.project.raw_data
+        if raw is not None and not raw.empty:
+            return raw, "raw"
+
+        return None, "none"
+
+    def _refresh_column_checkboxes(self):
+        for cb in self.column_checkboxes:
+            self.columns_container.removeWidget(cb)
+            cb.deleteLater()
+        self.column_checkboxes = []
+
+        if self.df is None:
+            return
+
+        for col in self.df.select_dtypes(include="number").columns:
+            cb = QCheckBox(col)
+            self.columns_container.addWidget(cb)
+            self.column_checkboxes.append(cb)
+
     def get_selected_columns(self):
         return [cb.text() for cb in self.column_checkboxes if cb.isChecked()]
 
@@ -196,8 +246,17 @@ class FeaturesPage(BasePage):
             self.status_label.setText("Статус: отмена...")
 
     def generate_features(self):
+        source_kind = self._sync_source_df()
+
         if self.df is None:
+            QMessageBox.critical(self, "Ошибка", "Нет данных для формирования признаков")
             return
+        if source_kind == "raw":
+            QMessageBox.warning(
+                self,
+                "Предупреждение",
+                "Предобработанные данные отсутствуют, признаки будут сформированы на основе исходных данных",
+            )
 
         selected_columns = self.get_selected_columns()
         if not selected_columns:
@@ -264,9 +323,15 @@ class FeaturesPage(BasePage):
 
     def _on_result(self, payload):
         self.features_df = payload["features_df"]
+        if self.features_df is None or self.features_df.empty:
+            self._hide_result_sections()
+            QMessageBox.warning(self, "Предупреждение", "Получен пустой набор признаков.")
+            return
+
         self.vm.project.set_features(self.features_df, params=payload["params"])
-        self.table.setModel(DataFrameModel(self.features_df))
-        self.update_feature_plot()
+        self.table.setModel(DataFrameModel(self.features_df.head(self.PREVIEW_ROWS)))
+        self.preview_info_label.setText(f"Показаны первые {self.PREVIEW_ROWS} строк")
+        self._show_result_sections()
         self.update_correlation_heatmap()
 
     def _on_error(self, message):
@@ -305,41 +370,23 @@ class FeaturesPage(BasePage):
         if self.ptp_cb.isChecked(): selected_features.append("ptp")
         return selected_features
 
-    def update_feature_plot(self):
-
-        if self.df is None:
-            return
-
-        selected_columns = self.get_selected_columns()
-        if not selected_columns:
-            return
-
-        column = selected_columns[0]
-
-        values = self.df[column].values
-
-        window = self.window_size.value()
-        step = self.step_size.value()
-
-        self.figure.clear()
-        ax = self.figure.add_subplot(111)
-
-        ax.plot(values, label="Time series")
-
-        for start in range(0, len(values) - window + 1, step):
-            ax.axvspan(start, start + window, alpha=0.1)
-
-        ax.set_title("Sliding windows")
-        ax.legend()
-
-        self.canvas.draw()
-
     def update_correlation_heatmap(self):
-
         if self.features_df is None:
+            self._hide_heatmap()
             return
 
-        corr = self.features_df.corr()
+        numeric_df = self.features_df.select_dtypes(include="number")
+        numeric_columns = list(numeric_df.columns)
+        if len(numeric_columns) < 2:
+            self._hide_heatmap()
+            self.heatmap_info_label.setText("Недостаточно числовых признаков для построения корреляции.")
+            self.heatmap_info_label.setStyleSheet("color: #b8860b;")
+            self.heatmap_info_label.setVisible(True)
+            return
+
+        shown_columns = numeric_columns[: self.MAX_HEATMAP_FEATURES]
+        limited_df = numeric_df[shown_columns]
+        corr = limited_df.corr()
 
         self.figure.clear()
         ax = self.figure.add_subplot(111)
@@ -354,7 +401,43 @@ class FeaturesPage(BasePage):
 
         ax.set_title("Feature correlation")
 
-        self.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        self.figure.tight_layout()
+        try:
+            self.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        except Exception as exc:
+            self.heatmap_info_label.setText(f"Ошибка отрисовки colorbar: {exc}")
+            self.heatmap_info_label.setStyleSheet("color: #b22222;")
+            self.heatmap_info_label.setVisible(True)
 
-        self.canvas.draw()
+        if len(numeric_columns) > self.MAX_HEATMAP_FEATURES:
+            self.heatmap_info_label.setText(
+                f"Показаны первые {self.MAX_HEATMAP_FEATURES} признаков из {len(numeric_columns)}. "
+                f"Полная матрица слишком велика для отображения."
+            )
+            self.heatmap_info_label.setStyleSheet("color: #b8860b;")
+            self.heatmap_info_label.setVisible(True)
+        else:
+            self.heatmap_info_label.setText("")
+            self.heatmap_info_label.setVisible(False)
+
+        self._show_heatmap()
+        self.canvas.draw_idle()
+
+    def _hide_result_sections(self):
+        self.features_title.setVisible(False)
+        self.preview_info_label.setVisible(False)
+        self.table.setVisible(False)
+        self._hide_heatmap()
+
+    def _show_result_sections(self):
+        self.features_title.setVisible(True)
+        self.preview_info_label.setVisible(True)
+        self.table.setVisible(True)
+
+    def _hide_heatmap(self):
+        self.heatmap_title.setVisible(False)
+        self.heatmap_info_label.setVisible(False)
+        self.figure_container.setVisible(False)
+
+    def _show_heatmap(self):
+        self.heatmap_title.setVisible(True)
+        self.figure_container.setVisible(True)
