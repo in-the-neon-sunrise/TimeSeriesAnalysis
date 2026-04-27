@@ -154,7 +154,7 @@ class DataPage(BasePage):
         self.table.setModel(PandasTableModel(df))
         self.table.show()
         self.data_title.show()
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.adjust_table_columns()
 
         # Структура

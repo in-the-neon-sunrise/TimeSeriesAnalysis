@@ -1,25 +1,31 @@
+from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import (
-    QLabel, QVBoxLayout, QHBoxLayout, QGroupBox,
-    QCheckBox, QComboBox, QPushButton, QSpinBox,
-    QScrollArea, QWidget
+    QLabel, QVBoxLayout, QGroupBox,
+    QCheckBox, QPushButton, QSpinBox,
+    QScrollArea, QWidget, QTableView, QMessageBox, QProgressBar, QHBoxLayout
 )
-
 from matplotlib.figure import Figure
+
 from ui.canvas import ScrollFriendlyCanvas
 from ui.pages.base_page import BasePage
 from services.feature_service import FeatureService
-from PySide6.QtWidgets import QTableView
-from PySide6.QtCore import QAbstractTableModel, Qt
 from ui.models.dataframe_model import DataFrameModel
+from workers.pipeline_worker import PipelineWorker
 
 
 class FeaturesPage(BasePage):
+    PREVIEW_ROWS = 100
+    MAX_HEATMAP_FEATURES = 20
 
     def __init__(self, data_vm):
         super().__init__()
 
         self.vm = data_vm
         self.df = None
+
+        self.features_df = None
+        self.thread_pool = QThreadPool.globalInstance()
+        self.current_worker = None
 
         self.vm.data_loaded.connect(self.on_data_loaded)
 
@@ -32,61 +38,72 @@ class FeaturesPage(BasePage):
         layout = QVBoxLayout(content)
         layout.setSpacing(14)
 
-        # ---------------- TITLE ----------------
-
         title = QLabel("Формирование признаков")
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(title)
 
-        # ---------------- COLUMN SELECTOR ----------------
+        layout.addWidget(QLabel("Выберите столбцы:"))
 
-        layout.addWidget(QLabel("Анализируемый столбец:"))
+        self.columns_container = QVBoxLayout()
+        self.column_checkboxes = []
 
-        self.column_selector = QComboBox()
-        self.column_selector.setEnabled(False)
+        columns_widget = QWidget()
+        columns_widget.setLayout(self.columns_container)
 
-        layout.addWidget(self.column_selector)
-
-        # ---------------- WINDOW PARAMETERS ----------------
+        layout.addWidget(columns_widget)
 
         layout.addWidget(self._window_group())
-
-        # ---------------- FEATURE GROUPS ----------------
 
         layout.addWidget(self._stat_features())
         layout.addWidget(self._dynamic_features())
         layout.addWidget(self._energy_features())
 
-        # ---------------- PLOT ----------------
+        self.heatmap_title = QLabel("Корреляция признаков")
+        self.heatmap_title.setStyleSheet("font-weight: bold;")
+        layout.addWidget(self.heatmap_title)
 
-        self.figure = Figure(figsize=(5, 3))
+        self.heatmap_info_label = QLabel("")
+        layout.addWidget(self.heatmap_info_label)
+
+        self.figure = Figure(figsize=(8, 5), constrained_layout=True)
         self.canvas = ScrollFriendlyCanvas(self.figure)
         self.canvas.setMinimumHeight(300)
 
-        figure_container = QWidget()
-        figure_layout = QVBoxLayout(figure_container)
+        self.figure_container = QWidget()
+        figure_layout = QVBoxLayout(self.figure_container)
         figure_layout.setContentsMargins(0, 0, 0, 0)
         figure_layout.addWidget(self.canvas)
 
-        layout.addWidget(figure_container)
+        layout.addWidget(self.figure_container)
 
         self.table = QTableView()
-        layout.addWidget(QLabel("Сгенерированные признаки"))
+        self.table.setMinimumHeight(220)
+        self.features_title = QLabel("Сгенерированные признаки")
+        layout.addWidget(self.features_title)
+        self.preview_info_label = QLabel("")
+        layout.addWidget(self.preview_info_label)
         layout.addWidget(self.table)
 
-        # ---------------- GENERATE BUTTON ----------------
+        self.status_label = QLabel("Статус: ожидание")
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.progress_bar)
 
+        action_row = QHBoxLayout()
         self.generate_btn = QPushButton("Сгенерировать признаки")
         self.generate_btn.clicked.connect(self.generate_features)
-
-        layout.addWidget(self.generate_btn)
+        self.cancel_btn = QPushButton("Отменить")
+        self.cancel_btn.setEnabled(False)
+        self.cancel_btn.clicked.connect(self.cancel_generation)
+        action_row.addWidget(self.generate_btn)
+        action_row.addWidget(self.cancel_btn)
+        layout.addLayout(action_row)
 
         root_layout = QVBoxLayout(self)
         root_layout.addWidget(scroll)
-
-    # ============================================================
-    # WINDOW PARAMETERS
-    # ============================================================
+        self._hide_result_sections()
 
     def _window_group(self):
 
@@ -111,9 +128,6 @@ class FeaturesPage(BasePage):
 
         return group
 
-    # ============================================================
-    # STAT FEATURES
-    # ============================================================
 
     def _stat_features(self):
 
@@ -128,21 +142,13 @@ class FeaturesPage(BasePage):
         self.skew_cb = QCheckBox("Skewness")
         self.kurt_cb = QCheckBox("Kurtosis")
 
-        layout.addWidget(self.mean_cb)
-        layout.addWidget(self.std_cb)
-        layout.addWidget(self.var_cb)
-        layout.addWidget(self.min_cb)
-        layout.addWidget(self.max_cb)
-        layout.addWidget(self.skew_cb)
-        layout.addWidget(self.kurt_cb)
+        for cb in [self.mean_cb, self.std_cb, self.var_cb, self.min_cb, self.max_cb, self.skew_cb, self.kurt_cb]:
+            layout.addWidget(cb)
 
         group.setLayout(layout)
 
         return group
 
-    # ============================================================
-    # DYNAMIC FEATURES
-    # ============================================================
 
     def _dynamic_features(self):
 
@@ -153,17 +159,12 @@ class FeaturesPage(BasePage):
         self.gradient_cb = QCheckBox("Gradient")
         self.roc_cb = QCheckBox("Rate of change")
 
-        layout.addWidget(self.diff_cb)
-        layout.addWidget(self.gradient_cb)
-        layout.addWidget(self.roc_cb)
+        for cb in [self.diff_cb, self.gradient_cb, self.roc_cb]:
+            layout.addWidget(cb)
 
         group.setLayout(layout)
-
         return group
 
-    # ============================================================
-    # ENERGY FEATURES
-    # ============================================================
 
     def _energy_features(self):
 
@@ -174,161 +175,218 @@ class FeaturesPage(BasePage):
         self.energy_cb = QCheckBox("Signal energy")
         self.ptp_cb = QCheckBox("Peak-to-peak")
 
-        layout.addWidget(self.rms_cb)
-        layout.addWidget(self.energy_cb)
-        layout.addWidget(self.ptp_cb)
+        for cb in [self.rms_cb, self.energy_cb, self.ptp_cb]:
+            layout.addWidget(cb)
 
         group.setLayout(layout)
-
         return group
 
-    # ============================================================
-    # DATA LOADED
-    # ============================================================
 
     def on_data_loaded(self, df):
-
         self.df = df
+        self.features_df = None
+        self.table.setModel(None)
+        self.preview_info_label.setText("")
+        self._hide_result_sections()
 
-        self.column_selector.clear()
+        # очистка старых чекбоксов
+        for cb in self.column_checkboxes:
+            self.columns_container.removeWidget(cb)
+            cb.deleteLater()
+
+        self.column_checkboxes = []
 
         numeric_columns = df.select_dtypes(include="number").columns
 
-        self.column_selector.addItems(numeric_columns)
+        for col in numeric_columns:
+            cb = QCheckBox(col)
+            self.columns_container.addWidget(cb)
+            self.column_checkboxes.append(cb)
 
-        self.column_selector.setEnabled(True)
+    def on_enter(self):
+        self._sync_source_df()
+        self._refresh_column_checkboxes()
 
-        self.update_plot()
+    def _sync_source_df(self):
+        source_df, source_kind = self._get_feature_source_df()
+        self.df = source_df
+        return source_kind
 
-    # ============================================================
-    # PLOT
-    # ============================================================
+    def _get_feature_source_df(self):
+        processed = self.vm.project.processed_data
+        if processed is not None and not processed.empty:
+            return processed, "processed"
 
-    def update_plot(self):
+        raw = self.vm.project.raw_data
+        if raw is not None and not raw.empty:
+            return raw, "raw"
+
+        return None, "none"
+
+    def _refresh_column_checkboxes(self):
+        for cb in self.column_checkboxes:
+            self.columns_container.removeWidget(cb)
+            cb.deleteLater()
+        self.column_checkboxes = []
 
         if self.df is None:
             return
 
-        column = self.column_selector.currentText()
+        for col in self.df.select_dtypes(include="number").columns:
+            cb = QCheckBox(col)
+            self.columns_container.addWidget(cb)
+            self.column_checkboxes.append(cb)
 
-        if column == "":
-            return
+    def get_selected_columns(self):
+        return [cb.text() for cb in self.column_checkboxes if cb.isChecked()]
 
-        self.figure.clear()
-
-        ax = self.figure.add_subplot(111)
-        ax.plot(self.df[column].values)
-
-        ax.set_title("Временной ряд")
-
-        self.canvas.draw()
-
-    # ============================================================
-    # GENERATE FEATURES
-    # ============================================================
+    def cancel_generation(self):
+        if self.current_worker is not None:
+            self.current_worker.cancel()
+            self.status_label.setText("Статус: отмена...")
 
     def generate_features(self):
+        source_kind = self._sync_source_df()
 
         if self.df is None:
+            QMessageBox.critical(self, "Ошибка", "Нет данных для формирования признаков")
+            return
+        if source_kind == "raw":
+            QMessageBox.warning(
+                self,
+                "Предупреждение",
+                "Предобработанные данные отсутствуют, признаки будут сформированы на основе исходных данных",
+            )
+
+        selected_columns = self.get_selected_columns()
+        if not selected_columns:
+            QMessageBox.warning(self, "Ошибка", "Не выбраны столбцы")
             return
 
-        column = self.column_selector.currentText()
+        selected_features = self._get_selected_features()
+        if not selected_features:
+            QMessageBox.warning(self, "Ошибка", "Выберите хотя бы один признак")
+            return
 
         window = self.window_size.value()
         step = self.step_size.value()
 
-        selected_features = []
+        self._set_busy(True)
+        self.status_label.setText("Статус: запуск вычисления признаков")
+        self.progress_bar.setValue(0)
 
-        if self.mean_cb.isChecked():
-            selected_features.append("mean")
-
-        if self.std_cb.isChecked():
-            selected_features.append("std")
-
-        if self.var_cb.isChecked():
-            selected_features.append("var")
-
-        if self.min_cb.isChecked():
-            selected_features.append("min")
-
-        if self.max_cb.isChecked():
-            selected_features.append("max")
-
-        if self.skew_cb.isChecked():
-            selected_features.append("skew")
-
-        if self.kurt_cb.isChecked():
-            selected_features.append("kurt")
-
-        if self.diff_cb.isChecked():
-            selected_features.append("diff")
-
-        if self.gradient_cb.isChecked():
-            selected_features.append("gradient")
-
-        if self.roc_cb.isChecked():
-            selected_features.append("roc")
-
-        if self.rms_cb.isChecked():
-            selected_features.append("rms")
-
-        if self.energy_cb.isChecked():
-            selected_features.append("energy")
-
-        if self.ptp_cb.isChecked():
-            selected_features.append("ptp")
-
-        series = self.df[column]
-
-        features_df = FeatureService.extract_features(
-            series,
+        self.current_worker = PipelineWorker(
+            self._compute_features,
+            self.df.copy(),
+            selected_columns,
             window,
             step,
-            selected_features
+            selected_features,
         )
-        self.features_df = features_df
+        self.current_worker.signals.progress.connect(self._on_progress)
+        self.current_worker.signals.result.connect(self._on_result)
+        self.current_worker.signals.error.connect(self._on_error)
+        self.current_worker.signals.finished.connect(self._on_finished)
+        self.thread_pool.start(self.current_worker)
 
-        print(features_df.head())
+    def _compute_features(self, df, selected_columns, window, step, selected_features, progress_callback=None, is_cancelled=None):
+        import pandas as pd
 
-        features_df = features_df
+        all_features = []
+        total_cols = max(1, len(selected_columns))
+        for idx, col in enumerate(selected_columns, start=1):
+            if is_cancelled and is_cancelled():
+                raise RuntimeError("Задача отменена пользователем.")
 
-        model = DataFrameModel(features_df)
-        self.table.setModel(model)
+            features_df = FeatureService.extract_features(
+                df[col], window, step, selected_features, progress_callback=progress_callback, is_cancelled=is_cancelled
+            ).add_prefix(f"{col}_")
+            all_features.append(features_df)
 
-        self.update_feature_plot()
+            if progress_callback:
+                progress_callback.emit(int((idx / total_cols) * 100), f"Обработана колонка: {col}")
+
+        result_df = pd.concat(all_features, axis=1)
+        return {
+            "features_df": result_df,
+            "params": {
+                "window_size": window,
+                "step_size": step,
+                "selected_columns": selected_columns,
+                "selected_features": selected_features,
+            },
+        }
+
+    def _on_progress(self, value, message):
+        self.progress_bar.setValue(value)
+        self.status_label.setText(f"Статус: {message}")
+
+    def _on_result(self, payload):
+        self.features_df = payload["features_df"]
+        if self.features_df is None or self.features_df.empty:
+            self._hide_result_sections()
+            QMessageBox.warning(self, "Предупреждение", "Получен пустой набор признаков.")
+            return
+
+        self.vm.project.set_features(self.features_df, params=payload["params"])
+        self.table.setModel(DataFrameModel(self.features_df.head(self.PREVIEW_ROWS)))
+        self.preview_info_label.setText(f"Показаны первые {self.PREVIEW_ROWS} строк")
+        self._show_result_sections()
         self.update_correlation_heatmap()
 
-    def update_feature_plot(self):
-
-        if self.df is None:
+    def _on_error(self, message):
+        if "отменена" in message.lower():
+            self.status_label.setText("Статус: задача отменена")
             return
+        QMessageBox.critical(self, "Ошибка", message)
 
-        column = self.column_selector.currentText()
+    def _on_finished(self, cancelled):
+        self._set_busy(False)
+        if cancelled:
+            self.status_label.setText("Статус: задача отменена")
+        elif self.progress_bar.value() < 100:
+            self.progress_bar.setValue(100)
+            self.status_label.setText("Статус: выполнено")
+        self.current_worker = None
 
-        values = self.df[column].values
+    def _set_busy(self, busy: bool):
+        self.generate_btn.setEnabled(not busy)
+        self.cancel_btn.setEnabled(busy)
 
-        window = self.window_size.value()
-        step = self.step_size.value()
-
-        self.figure.clear()
-        ax = self.figure.add_subplot(111)
-
-        ax.plot(values, label="Time series")
-
-        for start in range(0, len(values) - window + 1, step):
-            ax.axvspan(start, start + window, alpha=0.1)
-
-        ax.set_title("Sliding windows")
-        ax.legend()
-
-        self.canvas.draw()
+    def _get_selected_features(self):
+        selected_features = []
+        if self.mean_cb.isChecked(): selected_features.append("mean")
+        if self.std_cb.isChecked(): selected_features.append("std")
+        if self.var_cb.isChecked(): selected_features.append("var")
+        if self.min_cb.isChecked(): selected_features.append("min")
+        if self.max_cb.isChecked(): selected_features.append("max")
+        if self.skew_cb.isChecked(): selected_features.append("skew")
+        if self.kurt_cb.isChecked(): selected_features.append("kurt")
+        if self.diff_cb.isChecked(): selected_features.append("diff")
+        if self.gradient_cb.isChecked(): selected_features.append("gradient")
+        if self.roc_cb.isChecked(): selected_features.append("roc")
+        if self.rms_cb.isChecked(): selected_features.append("rms")
+        if self.energy_cb.isChecked(): selected_features.append("energy")
+        if self.ptp_cb.isChecked(): selected_features.append("ptp")
+        return selected_features
 
     def update_correlation_heatmap(self):
-
         if self.features_df is None:
+            self._hide_heatmap()
             return
 
-        corr = self.features_df.corr()
+        numeric_df = self.features_df.select_dtypes(include="number")
+        numeric_columns = list(numeric_df.columns)
+        if len(numeric_columns) < 2:
+            self._hide_heatmap()
+            self.heatmap_info_label.setText("Недостаточно числовых признаков для построения корреляции.")
+            self.heatmap_info_label.setStyleSheet("color: #b8860b;")
+            self.heatmap_info_label.setVisible(True)
+            return
+
+        shown_columns = numeric_columns[: self.MAX_HEATMAP_FEATURES]
+        limited_df = numeric_df[shown_columns]
+        corr = limited_df.corr()
 
         self.figure.clear()
         ax = self.figure.add_subplot(111)
@@ -336,13 +394,50 @@ class FeaturesPage(BasePage):
         im = ax.imshow(corr, aspect="auto")
 
         ax.set_xticks(range(len(corr.columns)))
-        ax.set_xticklabels(corr.columns, rotation=45)
+        ax.set_xticklabels(corr.columns, rotation=45, ha="right")
 
         ax.set_yticks(range(len(corr.columns)))
         ax.set_yticklabels(corr.columns)
 
         ax.set_title("Feature correlation")
 
-        self.figure.colorbar(im)
+        try:
+            self.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        except Exception as exc:
+            self.heatmap_info_label.setText(f"Ошибка отрисовки colorbar: {exc}")
+            self.heatmap_info_label.setStyleSheet("color: #b22222;")
+            self.heatmap_info_label.setVisible(True)
 
-        self.canvas.draw()
+        if len(numeric_columns) > self.MAX_HEATMAP_FEATURES:
+            self.heatmap_info_label.setText(
+                f"Показаны первые {self.MAX_HEATMAP_FEATURES} признаков из {len(numeric_columns)}. "
+                f"Полная матрица слишком велика для отображения."
+            )
+            self.heatmap_info_label.setStyleSheet("color: #b8860b;")
+            self.heatmap_info_label.setVisible(True)
+        else:
+            self.heatmap_info_label.setText("")
+            self.heatmap_info_label.setVisible(False)
+
+        self._show_heatmap()
+        self.canvas.draw_idle()
+
+    def _hide_result_sections(self):
+        self.features_title.setVisible(False)
+        self.preview_info_label.setVisible(False)
+        self.table.setVisible(False)
+        self._hide_heatmap()
+
+    def _show_result_sections(self):
+        self.features_title.setVisible(True)
+        self.preview_info_label.setVisible(True)
+        self.table.setVisible(True)
+
+    def _hide_heatmap(self):
+        self.heatmap_title.setVisible(False)
+        self.heatmap_info_label.setVisible(False)
+        self.figure_container.setVisible(False)
+
+    def _show_heatmap(self):
+        self.heatmap_title.setVisible(True)
+        self.figure_container.setVisible(True)
