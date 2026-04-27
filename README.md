@@ -32,6 +32,9 @@ The application provides a full analytical workflow: from data import and prepro
 
 ## Installation
 
+Download folder and open file main.exe:
+
+https://drive.google.com/drive/folders/1NZ-u00bsywPp93Kj3k2NJRy-W4TbnLZK?usp=sharing
 
 ## Author
 
