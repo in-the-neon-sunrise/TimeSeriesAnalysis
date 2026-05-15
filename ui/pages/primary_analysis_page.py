@@ -24,7 +24,6 @@ class PrimaryAnalysisPage(BasePage):
         self.vm.data_loaded.connect(self.on_data_ready)
         self.vm.profile_ready.connect(self.show_profile)
 
-        # --- Scroll ---
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
 
@@ -84,12 +83,10 @@ class PrimaryAnalysisPage(BasePage):
         diag_layout.addWidget(QLabel("Анализируемый столбец:"))
         diag_layout.addWidget(self.column_selector)
 
-        # ---------- ADF ----------
         self.adf_label = QLabel()
         self.adf_label.setWordWrap(True)
         diag_layout.addWidget(self.adf_label)
 
-        # ---------- ACF ----------
         self.acf_figure = Figure(figsize=(5, 3))
         self.acf_canvas = ScrollFriendlyCanvas(self.acf_figure)
 
@@ -147,17 +144,12 @@ class PrimaryAnalysisPage(BasePage):
         if self.vm.has_raw_data():
             self.setup_analysis(self.vm.get_raw_data())
 
-    # ==========================================================
-    # Data handling
-    # ==========================================================
-
     def on_data_ready(self, df):
         self.setup_analysis(df)
 
     def setup_analysis(self, df):
         self.df = df
 
-        # --- basic info ---
         info = DataStatisticsService.basic_info(df)
 
         self.rows_label.setText(
@@ -169,7 +161,6 @@ class PrimaryAnalysisPage(BasePage):
 
         self.stats_box.show()
 
-        # --- numeric columns ---
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
 
         self.column_selector.clear()
@@ -179,19 +170,11 @@ class PrimaryAnalysisPage(BasePage):
             self.diagnostics_box.show()
             self.update_diagnostics(numeric_cols[0])
 
-    # ==========================================================
-    # Profile table
-    # ==========================================================
-
     def show_profile(self, profile):
         self.profile_table.setModel(ProfileTableModel(profile))
         self.profile_table.show()
         self.profile_title.show()
         self.adjust_table_columns()
-
-    # ==========================================================
-    # Diagnostics
-    # ==========================================================
 
     def on_column_changed(self, column_name: str):
         if not column_name:
@@ -204,7 +187,6 @@ class PrimaryAnalysisPage(BasePage):
 
         series = self.df[column_name]
 
-        # ---------- ADF ----------
         adf = DataStatisticsService.stationarity_adf(series)
 
         adf_text = (
@@ -217,7 +199,6 @@ class PrimaryAnalysisPage(BasePage):
 
         self.adf_label.setText(adf_text)
 
-        # ---------- ACF ----------
         acf_values = DataStatisticsService.autocorrelation(series)
 
         self.acf_figure.clear()
@@ -230,12 +211,7 @@ class PrimaryAnalysisPage(BasePage):
 
         self.acf_canvas.draw()
 
-        # ---------- Outliers ----------
         self.update_outliers(column_name)
-
-    # ==========================================================
-    # Outliers
-    # ==========================================================
 
     def on_outlier_method_changed(self):
         column = self.column_selector.currentText()

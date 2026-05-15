@@ -92,20 +92,19 @@ class MainWindow(QMainWindow):
     def _create_menu(self):
         menu_bar = self.menuBar()
 
-        # ===== Меню "Файл" =====
         file_menu = menu_bar.addMenu("Файл")
 
-        # --- Открыть ---
+        # Открыть
         open_action = QAction("Открыть...", self)
         open_action.setShortcut(QKeySequence.StandardKey.Open)
         open_action.triggered.connect(self._open_project)
 
-        # --- Сохранить ---
+        # Сохранить
         save_action = QAction("Сохранить", self)
         save_action.setShortcut(QKeySequence.StandardKey.Save)
         save_action.triggered.connect(self._save_project)
 
-        # --- Сохранить как ---
+        # Сохранить как
         save_as_action = QAction("Сохранить как...", self)
         save_as_action.setShortcut(QKeySequence.StandardKey.SaveAs)
         save_as_action.triggered.connect(self._save_project_as)

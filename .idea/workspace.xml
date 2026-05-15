@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="global optimisation">
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="Improved functionality">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/preprocessing_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/preprocessing_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/features_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/features_page.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/preprocessing_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/preprocessing_page.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/segmentation/sda_adapter.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/segmentation/sda_adapter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/project_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/project_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,6 +28,7 @@
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -43,7 +43,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
@@ -190,7 +190,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777231413790</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Improved functionality">
+      <option name="closed" value="true" />
+      <created>1777242857849</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1777242857849</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -229,6 +237,7 @@
     <MESSAGE value="stop wheel changes" />
     <MESSAGE value="connect sda" />
     <MESSAGE value="global optimisation" />
-    <option name="LAST_COMMIT_MESSAGE" value="global optimisation" />
+    <MESSAGE value="Improved functionality" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improved functionality" />
   </component>
 </project>

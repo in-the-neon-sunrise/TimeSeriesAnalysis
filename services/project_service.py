@@ -27,7 +27,6 @@ class ProjectService:
         self.raw_data = df
         self.file_path = file_path
 
-        # При загрузке новых данных сбрасываем результаты
         self.processed_data = None
         self.features = None
         self.segments = None
@@ -69,7 +68,7 @@ class ProjectService:
         if params:
             self.parameters["markov"] = params
 
-    # проверки
+
 
     def has_raw_data(self):
         return self.raw_data is not None
