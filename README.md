@@ -34,7 +34,7 @@ The application provides a full analytical workflow: from data import and prepro
 
 Download folder and open file main.exe:
 
-https://drive.google.com/drive/folders/1NZ-u00bsywPp93Kj3k2NJRy-W4TbnLZK?usp=sharing
+https://drive.google.com/drive/folders/1nWTzC9Hh4So7JdnhifHxG2JPA2mtZi3e?usp=sharing
 
 ## Author
 
