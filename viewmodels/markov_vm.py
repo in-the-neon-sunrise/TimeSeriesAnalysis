@@ -61,7 +61,7 @@ class MarkovViewModel(BaseViewModel):
         try:
             request = self.build_model_request(order, normalize, sequential_only, min_frequency)
             result = self.execute_model(**request)
-            self.apply_model_result(result)
+            self.apply_model_result(result, source_key=request.get("source_key"), output_name=request.get("output_name"))
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
@@ -91,9 +91,9 @@ class MarkovViewModel(BaseViewModel):
             is_cancelled=is_cancelled,
         )
 
-    def apply_model_result(self, result: MarkovResult):
+    def apply_model_result(self, result: MarkovResult, source_key: str | None = None, output_name: str | None = None):
         self.current_result = result
-        self._persist_result(result)
+        self._persist_result(result, source_key=source_key, output_name=output_name)
         self.model_ready.emit(result)
         self.info_changed.emit("Markov model успешно построена.")
 
@@ -115,12 +115,18 @@ class MarkovViewModel(BaseViewModel):
         self.current_result.transition_probabilities.to_csv(output_path)
 
     def _get_source_df(self, source_key: str | None = None):
-        mapping = {"clusters": self.project.clusters, "segments": self.project.segments, "features": self.project.features}
+        mapping = {
+            "raw": self.project.raw_data,
+            "processed": self.project.processed_data,
+            "features": self.project.features,
+            "segments": self.project.segments,
+            "clusters": self.project.clusters,
+        }
         if source_key in mapping:
             return mapping[source_key]
         return self.project.clusters
 
-    def _persist_result(self, result: MarkovResult):
+    def _persist_result(self, result: MarkovResult, source_key: str | None = None, output_name: str | None = None):
         payload = result.to_project_payload()
         self.project.set_markov_matrix(result.transition_probabilities, params=result.params)
         self.project.set_markov_result(payload, params=result.params)
@@ -129,4 +135,6 @@ class MarkovViewModel(BaseViewModel):
             "params": result.params,
             "summary": result.summary,
             "stationary_distribution": result.stationary_distribution,
+            "source_key": source_key or "clusters",
+            "output_name": output_name or "markov_matrix",
         }

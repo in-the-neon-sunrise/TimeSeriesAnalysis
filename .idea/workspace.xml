@@ -4,18 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="Last changes">
-      <change afterPath="$PROJECT_DIR$/ui/dataset_toolbar.py" afterDir="false" />
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="minor changes. toolbar">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/external/SDA/stageprocess/stage2.py" beforeDir="false" afterPath="$PROJECT_DIR$/external/SDA/stageprocess/stage2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/clustering_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/clustering_page.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/features_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/features_page.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/markov_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/markov_page.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/segmentation_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/segmentation_page.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/viewmodels/clustering_vm.py" beforeDir="false" afterPath="$PROJECT_DIR$/viewmodels/clustering_vm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/markov_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/markov_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/viewmodels/markov_vm.py" beforeDir="false" afterPath="$PROJECT_DIR$/viewmodels/markov_vm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/viewmodels/segmentation_vm.py" beforeDir="false" afterPath="$PROJECT_DIR$/viewmodels/segmentation_vm.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -215,7 +207,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778847552098</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="minor changes. toolbar">
+      <option name="closed" value="true" />
+      <created>1779021884229</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1779021884229</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -256,6 +256,7 @@
     <MESSAGE value="global optimisation" />
     <MESSAGE value="Improved functionality" />
     <MESSAGE value="Last changes" />
-    <option name="LAST_COMMIT_MESSAGE" value="Last changes" />
+    <MESSAGE value="minor changes. toolbar" />
+    <option name="LAST_COMMIT_MESSAGE" value="minor changes. toolbar" />
   </component>
 </project>
