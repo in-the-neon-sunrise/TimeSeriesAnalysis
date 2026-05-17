@@ -52,7 +52,7 @@ class SegmentationViewModel(BaseViewModel):
 
     def execute_segmentation(self, source_df, selected_columns, params, timestamp_series, source_key=None,
                              output_name=None, progress_callback=None, is_cancelled=None):
-        return self.segmentation_service.run_segmentation(
+        result = self.segmentation_service.run_segmentation(
             features_df=source_df,
             selected_columns=selected_columns,
             params=params,
@@ -61,6 +61,10 @@ class SegmentationViewModel(BaseViewModel):
             progress_callback=progress_callback,
             is_cancelled=is_cancelled,
         )
+        result.params = dict(result.params)
+        result.params["source_dataset_name"] = source_key or "features"
+        result.params["output_dataset_name"] = output_name or "segments"
+        return result
 
     def apply_segmentation_result(self, result: SegmentationResult):
         self.current_result = result
@@ -70,6 +74,9 @@ class SegmentationViewModel(BaseViewModel):
             "edges": result.edges,
             "summary": result.summary,
             "selected_columns": result.selected_columns,
+            "source_dataset_name": result.params.get("source_dataset_name"),
+            "output_dataset_name": result.params.get("output_dataset_name"),
+            "mode": result.summary.get("mode", result.params.get("mode", "full")),
         }
         self.segmentation_ready.emit(result)
         self.info_changed.emit("Сегментация SDA завершена успешно")

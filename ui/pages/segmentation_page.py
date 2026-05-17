@@ -20,7 +20,8 @@ from PySide6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QWidget,
-    QProgressBar
+    QProgressBar,
+    QComboBox,
 )
 
 from ui.canvas import ScrollFriendlyCanvas
@@ -151,6 +152,27 @@ class SegmentationPage(BasePage):
         self.st2_len_thresholds = QLabel("st2_len_thresholds: 40")
         self.scale_cb = QCheckBox("Scale features")
 
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItem("Обработать весь набор данных", "full")
+        self.mode_combo.addItem("Обработать по кусочкам", "chunked")
+        self.chunk_size = QSpinBox();
+        self.chunk_size.setRange(100, 10_000_000);
+        self.chunk_size.setValue(7200)
+        self.overlap = QSpinBox();
+        self.overlap.setRange(0, 1_000_000);
+        self.overlap.setValue(600)
+        self.min_segment_len = QSpinBox();
+        self.min_segment_len.setRange(1, 1_000_000);
+        self.min_segment_len.setValue(120)
+        self.merge_tol = QSpinBox();
+        self.merge_tol.setRange(0, 1_000_000);
+        self.merge_tol.setValue(120)
+        self.min_score = QDoubleSpinBox();
+        self.min_score.setRange(0.0, 1.0);
+        self.min_score.setSingleStep(0.01);
+        self.min_score.setValue(0.05)
+        self.mode_combo.currentIndexChanged.connect(self._toggle_chunk_fields)
+
         grid.addWidget(QLabel("n_clusters_min"), 0, 0); grid.addWidget(self.n_clusters_min, 0, 1)
         grid.addWidget(QLabel("n_clusters_max"), 0, 2); grid.addWidget(self.n_clusters_max, 0, 3)
         grid.addWidget(QLabel("k_neighbours_min"), 1, 0); grid.addWidget(self.k_neighbours_min, 1, 1)
@@ -158,6 +180,20 @@ class SegmentationPage(BasePage):
         grid.addWidget(self.st1_len_thresholds, 2, 0, 1, 2)
         grid.addWidget(self.st2_len_thresholds, 2, 2, 1, 2)
         grid.addWidget(self.scale_cb, 3, 0, 1, 4)
+
+        grid.addWidget(QLabel("Режим"), 4, 0);
+        grid.addWidget(self.mode_combo, 4, 1, 1, 3)
+        grid.addWidget(QLabel("Размер куска"), 5, 0);
+        grid.addWidget(self.chunk_size, 5, 1)
+        grid.addWidget(QLabel("Перекрытие"), 5, 2);
+        grid.addWidget(self.overlap, 5, 3)
+        grid.addWidget(QLabel("Минимальная длина сегмента"), 6, 0);
+        grid.addWidget(self.min_segment_len, 6, 1)
+        grid.addWidget(QLabel("Допуск объединения границ"), 6, 2);
+        grid.addWidget(self.merge_tol, 6, 3)
+        grid.addWidget(QLabel("Минимальный score для разбиения"), 7, 0);
+        grid.addWidget(self.min_score, 7, 1)
+        self._toggle_chunk_fields()
         return group
 
     def _build_advanced_group(self):
@@ -261,7 +297,19 @@ class SegmentationPage(BasePage):
             "random_state": self.random_state.value(),
             "scale": self.scale_cb.isChecked(),
             "verbose": self.verbose_cb.isChecked(),
+            "mode": self.mode_combo.currentData(),
+            "chunk_size": self.chunk_size.value(),
+            "overlap": self.overlap.value(),
+            "min_segment_len": self.min_segment_len.value(),
+            "merge_boundaries_tolerance": self.merge_tol.value(),
+            "min_score_to_split": self.min_score.value(),
         }
+
+    def _toggle_chunk_fields(self):
+        is_chunked = self.mode_combo.currentData() == "chunked"
+        for w in [self.chunk_size, self.overlap, self.min_segment_len, self.merge_tol, self.min_score]:
+            w.setEnabled(is_chunked)
+
 
     def _run_segmentation(self):
         selected_columns = [cb.text() for cb in self.column_checkboxes if cb.isChecked()]
@@ -378,4 +426,4 @@ class SegmentationPage(BasePage):
         QMessageBox.critical(self, "Ошибка", message)
 
     def _show_info(self, message: str):
-        QMessageBox.information(self, "Информация", message)
+        self.status_label.setText(f"Статус: {message}")
