@@ -26,6 +26,9 @@ class FeaturesPage(BasePage):
         self.features_df = None
         self.thread_pool = QThreadPool.globalInstance()
         self.current_worker = None
+        self._selected_input_key = None
+        self._output_name = ""
+        self._output_edited = False
 
         self.vm.data_loaded.connect(self.on_data_loaded)
 
@@ -204,8 +207,47 @@ class FeaturesPage(BasePage):
             self.column_checkboxes.append(cb)
 
     def on_enter(self):
+        self._selected_input_key = self._selected_input_key or self._default_input_key()
         self._sync_source_df()
         self._refresh_column_checkboxes()
+
+    def get_dataset_toolbar_state(self):
+        options = self._dataset_options()
+        if not options:
+            return None
+        if self._selected_input_key not in [k for k, _, _ in options]:
+            self._selected_input_key = self._default_input_key()
+            self._output_edited = False
+        if not self._output_edited:
+            self._output_name = f"features_from_{self._selected_input_key}"
+        from ui.dataset_toolbar import DatasetOption
+        return {"options": [DatasetOption(k, t) for k, t, _ in options], "selected_key": self._selected_input_key,
+                "output_name": self._output_name}
+
+    def on_toolbar_input_changed(self, key):
+        self._selected_input_key = key
+        if not self._output_edited:
+            self._output_name = f"features_from_{key}"
+        self._sync_source_df()
+        self._refresh_column_checkboxes()
+
+    def on_toolbar_output_changed(self, text):
+        self._output_name = text.strip()
+        self._output_edited = True
+
+    def _dataset_options(self):
+        out = []
+        if self.vm.project.raw_data is not None and not self.vm.project.raw_data.empty: out.append(
+            ("raw", "исходные данные", self.vm.project.raw_data))
+        if self.vm.project.processed_data is not None and not self.vm.project.processed_data.empty: out.append(
+            ("processed", "предобработанные данные", self.vm.project.processed_data))
+        if self.vm.project.features is not None and not self.vm.project.features.empty: out.append(
+            ("features", "признаки", self.vm.project.features))
+        return out
+
+    def _default_input_key(self):
+        opts = self._dataset_options()
+        return opts[-1][0] if opts else None
 
     def _sync_source_df(self):
         source_df, source_kind = self._get_feature_source_df()
@@ -213,14 +255,9 @@ class FeaturesPage(BasePage):
         return source_kind
 
     def _get_feature_source_df(self):
-        processed = self.vm.project.processed_data
-        if processed is not None and not processed.empty:
-            return processed, "processed"
-
-        raw = self.vm.project.raw_data
-        if raw is not None and not raw.empty:
-            return raw, "raw"
-
+        for key, _, df in self._dataset_options():
+            if key == self._selected_input_key:
+                return df, key
         return None, "none"
 
     def _refresh_column_checkboxes(self):
@@ -251,12 +288,6 @@ class FeaturesPage(BasePage):
         if self.df is None:
             QMessageBox.critical(self, "Ошибка", "Нет данных для формирования признаков")
             return
-        if source_kind == "raw":
-            QMessageBox.warning(
-                self,
-                "Предупреждение",
-                "Предобработанные данные отсутствуют, признаки будут сформированы на основе исходных данных",
-            )
 
         selected_columns = self.get_selected_columns()
         if not selected_columns:
@@ -328,7 +359,10 @@ class FeaturesPage(BasePage):
             QMessageBox.warning(self, "Предупреждение", "Получен пустой набор признаков.")
             return
 
-        self.vm.project.set_features(self.features_df, params=payload["params"])
+        params = dict(payload["params"])
+        params["dataset_input"] = self._selected_input_key
+        params["dataset_output"] = self._output_name or f"features_from_{self._selected_input_key}"
+        self.vm.project.set_features(self.features_df, params=params)
         self.table.setModel(DataFrameModel(self.features_df.head(self.PREVIEW_ROWS)))
         self.preview_info_label.setText(f"Показаны первые {self.PREVIEW_ROWS} строк")
         self._show_result_sections()
@@ -348,6 +382,9 @@ class FeaturesPage(BasePage):
             self.progress_bar.setValue(100)
             self.status_label.setText("Статус: выполнено")
         self.current_worker = None
+        self._selected_input_key = None
+        self._output_name = ""
+        self._output_edited = False
 
     def _set_busy(self, busy: bool):
         self.generate_btn.setEnabled(not busy)

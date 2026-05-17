@@ -38,6 +38,9 @@ class MarkovPage(BasePage):
 
         self.thread_pool = QThreadPool.globalInstance()
         self.current_worker = None
+        self._selected_input_key = None
+        self._output_name = ""
+        self._output_edited = False
 
         self.vm.source_info_ready.connect(self._render_source_info)
         self.vm.model_ready.connect(self._show_result)
@@ -76,6 +79,40 @@ class MarkovPage(BasePage):
 
     def on_enter(self):
         self.vm.refresh_source_info()
+
+    def get_dataset_toolbar_state(self):
+        options = self._dataset_options()
+        if not options:
+            return None
+        if self._selected_input_key not in [k for k, _, _ in options]:
+            self._selected_input_key = options[-1][0]
+            self._output_edited = False
+        if not self._output_edited:
+            self._output_name = f"markov_from_{self._selected_input_key}"
+        from ui.dataset_toolbar import DatasetOption
+        return {"options": [DatasetOption(k, t) for k, t, _ in options], "selected_key": self._selected_input_key,
+                "output_name": self._output_name}
+
+    def on_toolbar_input_changed(self, key):
+        self._selected_input_key = key
+        if not self._output_edited:
+            self._output_name = f"markov_from_{key}"
+
+    def on_toolbar_output_changed(self, text):
+        self._output_name = text.strip()
+        self._output_edited = True
+
+    def _dataset_options(self):
+        out = []
+        p = getattr(self, "data_vm", None)
+        pr = self.vm.project
+        if pr.raw_data is not None and not pr.raw_data.empty: out.append(("raw", "исходные данные", pr.raw_data))
+        if pr.processed_data is not None and not pr.processed_data.empty: out.append(
+            ("processed", "предобработанные данные", pr.processed_data))
+        if pr.features is not None and not pr.features.empty: out.append(("features", "признаки", pr.features))
+        if pr.segments is not None and not pr.segments.empty: out.append(("segments", "сегменты", pr.segments))
+        if pr.clusters is not None and not pr.clusters.empty: out.append(("clusters", "кластеры", pr.clusters))
+        return out
 
     def _build_source_group(self):
         group = QGroupBox("Источник данных")
@@ -174,6 +211,8 @@ class MarkovPage(BasePage):
             normalize=self.normalize_cb.isChecked(),
             sequential_only=self.sequential_cb.isChecked(),
             min_frequency=self.min_frequency_spin.value(),
+            source_key=self._selected_input_key,
+            output_name=self._output_name,
         )
         self._set_busy(True)
         self.status_label.setText("Статус: выполняется построение модели")
@@ -212,6 +251,9 @@ class MarkovPage(BasePage):
             self.progress_bar.setValue(100)
             self.status_label.setText("Статус: выполнено")
         self.current_worker = None
+        self._selected_input_key = None
+        self._output_name = ""
+        self._output_edited = False
 
     def _set_busy(self, busy: bool):
         self.run_btn.setEnabled(not busy)

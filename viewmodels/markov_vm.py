@@ -65,8 +65,8 @@ class MarkovViewModel(BaseViewModel):
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
-    def build_model_request(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int):
-        source_df = self._get_source_df()
+    def build_model_request(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int, source_key: str | None = None, output_name: str | None = None):
+        source_df = self._get_source_df(source_key)
         if source_df is None or source_df.empty:
             raise ValueError("Нет данных кластеризации. Запустите clustering перед Markov modeling.")
         return {
@@ -75,9 +75,11 @@ class MarkovViewModel(BaseViewModel):
             "normalize": normalize,
             "sequential_only": sequential_only,
             "min_frequency": min_frequency,
+            "source_key": source_key,
+            "output_name": output_name,
         }
 
-    def execute_model(self, source_df, order, normalize, sequential_only, min_frequency, progress_callback=None,
+    def execute_model(self, source_df, order, normalize, sequential_only, min_frequency, source_key=None, output_name=None, progress_callback=None,
                       is_cancelled=None):
         return self.markov_service.build_model(
             source_df=source_df,
@@ -112,7 +114,10 @@ class MarkovViewModel(BaseViewModel):
         output_path = Path(file_path)
         self.current_result.transition_probabilities.to_csv(output_path)
 
-    def _get_source_df(self):
+    def _get_source_df(self, source_key: str | None = None):
+        mapping = {"clusters": self.project.clusters, "segments": self.project.segments, "features": self.project.features}
+        if source_key in mapping:
+            return mapping[source_key]
         return self.project.clusters
 
     def _persist_result(self, result: MarkovResult):

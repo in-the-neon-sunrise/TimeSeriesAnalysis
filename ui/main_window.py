@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QStackedWidget, QFileDialog
 )
+from PySide6.QtCore import Qt
 from ui.navigation_panel import NavigationPanel
 from ui.pages.data_page import DataPage
 from ui.pages.preprocessing_page import PreprocessingPage
@@ -12,6 +13,7 @@ from ui.pages.markov_page import MarkovPage
 from ui.pages.report_page import ReportPage
 from PySide6.QtGui import QAction
 from PySide6.QtGui import QKeySequence
+from ui.dataset_toolbar import DatasetToolbarWidget
 
 class MainWindow(QMainWindow):
     def __init__(self, data_vm, report_vm):
@@ -78,6 +80,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self._create_menu()
+        self._build_dataset_toolbar()
 
     def show_page(self, page):
         current = self.stack.currentWidget()
@@ -88,6 +91,8 @@ class MainWindow(QMainWindow):
 
         if hasattr(page, "on_enter"):
             page.on_enter()
+
+        self._update_dataset_toolbar(page)
 
     def _create_menu(self):
         menu_bar = self.menuBar()
@@ -113,6 +118,28 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(save_action)
         file_menu.addAction(save_as_action)
+
+    def _build_dataset_toolbar(self):
+        self.dataset_toolbar = DatasetToolbarWidget(self)
+        self.dataset_toolbar.hide()
+        self.menuBar().setCornerWidget(self.dataset_toolbar, Qt.TopRightCorner)
+
+    def _update_dataset_toolbar(self, page):
+        if hasattr(page, "get_dataset_toolbar_state"):
+            state = page.get_dataset_toolbar_state()
+            if state:
+                self.dataset_toolbar.set_options(state["options"], state.get("selected_key"))
+                self.dataset_toolbar.set_output_text(state.get("output_name", ""))
+                try:
+                    self.dataset_toolbar.selection_changed.disconnect()
+                    self.dataset_toolbar.output_changed.disconnect()
+                except Exception:
+                    pass
+                self.dataset_toolbar.selection_changed.connect(page.on_toolbar_input_changed)
+                self.dataset_toolbar.output_changed.connect(page.on_toolbar_output_changed)
+                self.dataset_toolbar.show()
+                return
+        self.dataset_toolbar.hide()
 
     def _open_project(self):
         file_path, _ = QFileDialog.getOpenFileName(

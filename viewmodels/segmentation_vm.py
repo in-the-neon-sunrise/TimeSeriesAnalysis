@@ -20,8 +20,8 @@ class SegmentationViewModel(BaseViewModel):
         self.segmentation_service = segmentation_service or SegmentationService()
         self.current_result: Optional[SegmentationResult] = None
 
-    def load_available_columns(self):
-        df = self._get_source_df()
+    def load_available_columns(self, source_key: str | None = None):
+        df = self._get_source_df(source_key)
         if df is None:
             self.columns_ready.emit([])
             return
@@ -36,8 +36,8 @@ class SegmentationViewModel(BaseViewModel):
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
-    def build_segmentation_request(self, selected_columns: List[str], params: Dict[str, Any]) -> Dict[str, Any]:
-        source_df = self._get_source_df()
+    def build_segmentation_request(self, selected_columns: List[str], params: Dict[str, Any], source_key: str | None = None, output_name: str | None = None) -> Dict[str, Any]:
+        source_df = self._get_source_df(source_key)
         if source_df is None:
             raise ValueError("Нет данных признаков. Сначала выполните формирование признаков")
 
@@ -46,15 +46,17 @@ class SegmentationViewModel(BaseViewModel):
             "selected_columns": selected_columns,
             "params": params,
             "timestamp_series": self._get_timestamp_series(source_df),
+            "source_key": source_key,
+            "output_name": output_name,
         }
 
-    def execute_segmentation(self, source_df, selected_columns, params, timestamp_series, progress_callback=None,
-                             is_cancelled=None):
+    def execute_segmentation(self, source_df, selected_columns, params, timestamp_series, source_key=None,
+                             output_name=None, progress_callback=None, is_cancelled=None):
         return self.segmentation_service.run_segmentation(
             features_df=source_df,
             selected_columns=selected_columns,
             params=params,
-            input_kind="features",
+            input_kind=source_key or "features",
             timestamp_series=timestamp_series,
             progress_callback=progress_callback,
             is_cancelled=is_cancelled,
@@ -79,11 +81,14 @@ class SegmentationViewModel(BaseViewModel):
         self.project.parameters.pop("segmentation_result", None)
         self.info_changed.emit("Результат сегментации очищен.")
 
-    def _get_source_df(self) -> Optional[pd.DataFrame]:
-        if self.project.features is not None and not self.project.features.empty:
-            return self.project.features
-        if self.project.processed_data is not None and not self.project.processed_data.empty:
-            return self.project.processed_data
+    def _get_source_df(self, source_key: str | None = None) -> Optional[pd.DataFrame]:
+        mapping = {"features": self.project.features, "processed": self.project.processed_data, "raw": self.project.raw_data}
+        if source_key in mapping and mapping[source_key] is not None and not mapping[source_key].empty:
+            return mapping[source_key]
+        for key in ["features", "processed", "raw"]:
+            df = mapping[key]
+            if df is not None and not df.empty:
+                return df
         return None
 
     def _get_timestamp_series(self, source_df: pd.DataFrame) -> Optional[pd.Series]:
