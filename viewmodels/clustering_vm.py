@@ -54,19 +54,21 @@ class ClusteringViewModel(BaseViewModel):
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
-    def build_clustering_request(self, method: str, selected_columns: List[str], params: Dict[str, Any]) -> Dict[
+    def build_clustering_request(self, method: str, selected_columns: List[str], params: Dict[str, Any], source_key: str | None = None, output_name: str | None = None) -> Dict[
         str, Any]:
-        segments_df = self.project.segments
+        segments_df = self._get_source_df(source_key)
         if segments_df is None or segments_df.empty:
-            raise ValueError("Нет данных сегментации. Сначала выполните этап segmentation.")
+            raise ValueError("Нет подходящих данных для кластеризации.")
         return {
             "segments_df": segments_df,
             "method": method,
             "selected_columns": selected_columns,
             "params": params,
+            "source_key": source_key,
+            "output_name": output_name,
         }
 
-    def execute_clustering(self, segments_df, method, selected_columns, params, progress_callback=None,
+    def execute_clustering(self, segments_df, method, selected_columns, params, source_key=None, output_name=None, progress_callback=None,
                            is_cancelled=None):
         return self.clustering_service.run_clustering(
             segments_df=segments_df,
@@ -110,3 +112,12 @@ class ClusteringViewModel(BaseViewModel):
             "distance_metric": result.distance_metric,
             "source_info": dict(result.source_info),
         }
+
+    def _get_source_df(self, source_key: str | None = None):
+        mapping = {"segments": self.project.segments, "features": self.project.features,
+                   "processed": self.project.processed_data, "raw": self.project.raw_data}
+        if source_key in mapping:
+            df = mapping[source_key]
+            if df is not None and not df.empty:
+                return df
+        return self.project.segments

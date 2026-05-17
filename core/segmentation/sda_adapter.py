@@ -9,7 +9,6 @@ from external import SDA
 
 
 class SDAAdapter:
-    """Thin adapter around external SDA implementation."""
 
     def run(
         self,

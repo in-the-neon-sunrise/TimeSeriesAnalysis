@@ -14,7 +14,7 @@ class MarkovService:
         "cluster", "cluster_id", "cluster_label", "state", "state_id", "label"
     )
     ORDER_COLUMN_CANDIDATES = (
-        "segment_id", "segment", "order", "index", "time", "timestamp", "date"
+        "segment_id", "segment", "order", "index", "start", "start_time", "end", "end_time", "time", "timestamp", "date"
     )
 
     def build_model(
@@ -84,14 +84,16 @@ class MarkovService:
             )
 
         df = source_df.copy()
-        order_col = self._choose_column(df.columns, self.ORDER_COLUMN_CANDIDATES)
-        if order_col is not None:
-            df = df.sort_values(order_col, kind="stable")
+        sort_columns = self._choose_order_columns(df)
+        if sort_columns:
+            df = df.sort_values(sort_columns, kind="stable")
 
         sequence_series = df[state_col].dropna()
-        if not sequential_only and order_col is not None:
-            dedup = df[[order_col, state_col]].dropna().drop_duplicates(subset=[order_col], keep="first")
-            dedup = dedup.sort_values(order_col, kind="stable")
+        if not sequential_only and sort_columns:
+            primary_order_col = sort_columns[0]
+            dedup = df[[primary_order_col, state_col]].dropna().drop_duplicates(subset=[primary_order_col],
+                                                                                keep="first")
+            dedup = dedup.sort_values(primary_order_col, kind="stable")
             sequence_series = dedup[state_col]
 
         sequence = sequence_series.tolist()
@@ -110,6 +112,7 @@ class MarkovService:
         observed_next_states = set()
         total = max(1, len(sequence) - order)
 
+        idx = 0
         for idx, i in enumerate(range(order, len(sequence)), start=1):
             self._check_cancel(is_cancelled)
             history = tuple(sequence[i - order:i])
@@ -117,7 +120,7 @@ class MarkovService:
             counts_map[history][next_state] += 1
             observed_next_states.add(next_state)
 
-        if progress_callback and idx % 100 == 0:
+        if progress_callback and (idx % 100 == 0 or idx == total):
             progress_callback.emit(15 + int((idx / total) * 45), f"Подсчет переходов: {idx}/{total}")
 
         histories = sorted(counts_map.keys(), key=lambda x: str(x))
@@ -255,7 +258,38 @@ class MarkovService:
                 return c
         return None
 
+    @classmethod
+    def _choose_order_columns(cls, df: pd.DataFrame) -> List[str]:
+        cols = list(df.columns)
+        lower_to_original = {c.lower(): c for c in cols}
+        # Приоритет осмысленных временных границ сегмента.
+        prioritized = [
+            "timestamp",
+            "time",
+            "date",
+            "start_time",
+            "start",
+            "end_time",
+            "end",
+            "segment_id",
+            "segment",
+            "order",
+            "index",
+        ]
+        selected: List[str] = []
+        for key in prioritized:
+            col = lower_to_original.get(key)
+            if col is not None and col not in selected:
+                selected.append(col)
+
+        if selected:
+            return selected
+
+        fallback = cls._choose_column(cols, cls.ORDER_COLUMN_CANDIDATES)
+        return [fallback] if fallback else []
+
     @staticmethod
     def _check_cancel(is_cancelled):
         if is_cancelled and is_cancelled():
             raise RuntimeError("Задача отменена")
+

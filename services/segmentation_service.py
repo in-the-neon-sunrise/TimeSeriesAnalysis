@@ -30,9 +30,14 @@ class SegmentationService:
             raise ValueError("Нет данных признаков для сегментации.")
 
         selected_columns = selected_columns or list(features_df.select_dtypes(include="number").columns)
+        mode = str(params.get("mode", "full")).lower()
+        if mode not in {"full", "chunked"}:
+            raise ValueError("Некорректный режим сегментации. Доступно: full/chunked.")
         data_for_sda, used_columns = self._prepare_numeric_data(features_df, selected_columns)
         if data_for_sda.shape[0] < 3:
             raise ValueError("Для сегментации нужно минимум 3 строки данных.")
+        if self._has_only_constant_columns(data_for_sda):
+            raise ValueError("Все выбранные признаки константные. Сегментация невозможна.")
 
         sda_params = self._extract_sda_params(params)
         sda_params = self._sanitize_sda_params(sda_params, n_rows=len(data_for_sda))
@@ -43,16 +48,38 @@ class SegmentationService:
             progress_callback.emit(15, "Подготовка данных завершена")
         self._check_cancel(is_cancelled)
 
-        results_table, stage1_results = self.adapter.run(features_for_algo, sda_params)
-        if results_table is None or results_table.empty:
-            raise ValueError("SDA вернул пустой результат")
+        if mode == "chunked":
+            result_payload = self.run_chunked_segmentation(
+                data=data_for_sda,
+                selected_columns=used_columns,
+                params=sda_params,
+                chunk_size=int(params.get("chunk_size", 7200)),
+                overlap=int(params.get("overlap", 600)),
+                min_segment_len=int(params.get("min_segment_len", 120)),
+                merge_boundaries_tolerance=int(params.get("merge_boundaries_tolerance", 120)),
+                min_score_to_split=float(params.get("min_score_to_split", 0.05)),
+                timestamp_series=timestamp_series,
+                progress_callback=progress_callback,
+                is_cancelled=is_cancelled,
+            )
+            results_table = result_payload["results_table"]
+            stage1_results = result_payload["stage1_results"]
+            edges = result_payload["edges"]
+            best_row = result_payload["best_row"]
+            chunk_stats = result_payload["chunk_stats"]
+        else:
+            results_table, stage1_results = self.adapter.run(features_for_algo, sda_params)
+            if results_table is None or results_table.empty:
+                raise ValueError("SDA вернул пустой результат")
 
-        if progress_callback:
-            progress_callback.emit(70, "SDA завершен, формирование результатов")
-        self._check_cancel(is_cancelled)
+            if progress_callback:
+                progress_callback.emit(70, "SDA завершен, формирование результатов")
+            self._check_cancel(is_cancelled)
 
-        best_row = self._select_best_result(results_table)
-        edges = self._extract_edges(best_row.get("St_edges"), len(data_for_sda))
+            best_row = self._select_best_result(results_table)
+            edges = self._extract_edges(best_row.get("St_edges"), len(data_for_sda))
+            chunk_stats = []
+
         stage_ids = self._edges_to_stage_ids(len(data_for_sda), edges)
 
         segmented_data = self._build_segmented_data(
@@ -63,6 +90,13 @@ class SegmentationService:
         )
         segments_table = self._build_segments_table(segmented_data, used_columns)
         summary = self._build_summary(results_table, best_row, edges, segments_table)
+
+        if chunk_stats:
+            summary["chunk_stats"] = chunk_stats
+            summary["mode"] = "chunked"
+            summary["chunks_processed"] = len(chunk_stats)
+        else:
+            summary["mode"] = "full"
 
         if progress_callback:
             progress_callback.emit(100, "Сегментация завершена")
@@ -82,6 +116,110 @@ class SegmentationService:
             timestamp_column=timestamp_series.name if timestamp_series is not None else None,
         )
 
+    def run_chunked_segmentation(
+            self, data, selected_columns, params, chunk_size, overlap, min_segment_len,
+            merge_boundaries_tolerance, min_score_to_split, timestamp_series=None,
+            progress_callback=None, is_cancelled=None,
+    ) -> Dict[str, Any]:
+        n_rows = len(data)
+        if chunk_size <= 0 or overlap < 0 or overlap >= chunk_size:
+            raise ValueError(
+                "Некорректные параметры фрагментации: требуется chunk_size > 0 и 0 <= overlap < chunk_size.")
+        step = chunk_size - overlap
+        if step <= 0:
+            raise ValueError("Некорректные параметры фрагментации: шаг должен быть больше 0.")
+
+        global_edges: List[int] = [0, n_rows]
+        all_results = []
+        all_stage1 = []
+        chunk_stats = []
+        starts = list(range(0, n_rows, step))
+        total_chunks = len(starts)
+
+        for i, start in enumerate(starts, start=1):
+            self._check_cancel(is_cancelled)
+            end = min(start + chunk_size, n_rows)
+            chunk = data.iloc[start:end]
+            if len(chunk) < 3:
+                chunk_stats.append({"chunk_id": i, "start": start, "end": end, "status": "skipped_too_small"})
+                continue
+            try:
+                chunk_params = self._sanitize_sda_params(dict(params), n_rows=len(chunk))
+                chunk_features = self._scale_if_needed(chunk.values, bool(params.get("scale", False)))
+                chunk_params["scale"] = False
+                result_tbl, st1_tbl = self.adapter.run(chunk_features, chunk_params)
+                if result_tbl is None or result_tbl.empty:
+                    chunk_stats.append({"chunk_id": i, "start": start, "end": end, "status": "skipped_empty_result"})
+                    continue
+                best_row = self._select_best_result(result_tbl)
+                score = float(best_row.get("Avg-Silh", best_row.get("Avg-Cal-Har", 0.0)) or 0.0)
+                local_edges = self._extract_edges(best_row.get("St_edges"), len(chunk))
+                if score >= min_score_to_split:
+                    global_edges.extend([start + edge for edge in local_edges if 0 < edge < len(chunk)])
+                    status = "accepted"
+                else:
+                    status = "low_score_skipped"
+                chunk_stats.append({"chunk_id": i, "start": start, "end": end, "score": score, "status": status})
+                result_tbl = result_tbl.copy()
+                result_tbl["chunk_id"] = i
+                all_results.append(result_tbl)
+                if st1_tbl is not None and not st1_tbl.empty:
+                    st1_tbl = st1_tbl.copy()
+                    st1_tbl["chunk_id"] = i
+                    all_stage1.append(st1_tbl)
+            except Exception:
+                chunk_stats.append({"chunk_id": i, "start": start, "end": end, "status": "failed"})
+            if progress_callback:
+                progress = int(15 + (i / total_chunks) * 75)
+                progress_callback.emit(progress, f"Обработка фрагмента {i} из {total_chunks}")
+
+        if not all_results:
+            raise ValueError("SDA не смог обработать ни одного фрагмента.")
+        edges = self.normalize_edges(global_edges, n_rows)
+        edges = self.merge_close_edges(edges, merge_boundaries_tolerance, n_rows)
+        edges = self.remove_short_segments(edges, min_segment_len, n_rows)
+
+        results_table = pd.concat(all_results, ignore_index=True)
+        stage1_results = pd.concat(all_stage1, ignore_index=True) if all_stage1 else pd.DataFrame()
+        best_row = self._select_best_result(results_table)
+        if progress_callback:
+            progress_callback.emit(90,
+                                   f"Сегментация завершена: обработано {total_chunks} фрагментов, найдено {len(edges) - 1} сегмента")
+        return {"results_table": results_table, "stage1_results": stage1_results, "edges": edges[1:-1],
+                "best_row": best_row, "chunk_stats": chunk_stats}
+
+    def normalize_edges(self, edges: List[int], n_rows: int) -> List[int]:
+        out = [int(e) for e in edges if 0 <= int(e) <= n_rows]
+        out.extend([0, n_rows])
+        return sorted(set(out))
+
+    def merge_close_edges(self, edges: List[int], tolerance: int, n_rows: int) -> List[int]:
+        if tolerance <= 0:
+            return self.normalize_edges(edges, n_rows)
+        merged = [edges[0]]
+        for edge in edges[1:]:
+            if edge - merged[-1] <= tolerance and edge not in (0, n_rows):
+                merged[-1] = int(round((merged[-1] + edge) / 2))
+            else:
+                merged.append(edge)
+        return self.normalize_edges(merged, n_rows)
+
+    def remove_short_segments(self, edges: List[int], min_segment_len: int, n_rows: int) -> List[int]:
+        if min_segment_len <= 1:
+            return self.normalize_edges(edges, n_rows)
+        normalized = self.normalize_edges(edges, n_rows)
+        i = 1
+        while i < len(normalized) - 1:
+            left, curr, right = normalized[i - 1], normalized[i], normalized[i + 1]
+            if (curr - left) < min_segment_len or (right - curr) < min_segment_len:
+                del normalized[i]
+                continue
+            i += 1
+        return self.normalize_edges(normalized, n_rows)
+
+    @staticmethod
+    def _has_only_constant_columns(df: pd.DataFrame) -> bool:
+        return all(df[c].nunique(dropna=True) <= 1 for c in df.columns)
 
     @staticmethod
     def _check_cancel(is_cancelled):

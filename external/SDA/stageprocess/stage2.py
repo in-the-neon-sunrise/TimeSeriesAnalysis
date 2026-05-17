@@ -42,7 +42,9 @@ def stage2_iter(
         st_cluster = st_edges_all[numpy.where(labels == _st)[0]]
         if len(st_cluster) == 0:
             continue
-        st_modes.append(int(scipy.stats.mode(st_cluster, nan_policy = 'omit').mode))
+        mode_value = scipy.stats.mode(st_cluster, nan_policy='omit').mode
+        mode_value = numpy.asarray(mode_value).ravel()[0]
+        st_modes.append(int(mode_value))
         st_medians.append(int(numpy.median(st_cluster)))
         st_means.append(int(numpy.mean(st_cluster)))
 

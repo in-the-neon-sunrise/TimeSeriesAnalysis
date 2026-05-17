@@ -61,12 +61,12 @@ class MarkovViewModel(BaseViewModel):
         try:
             request = self.build_model_request(order, normalize, sequential_only, min_frequency)
             result = self.execute_model(**request)
-            self.apply_model_result(result)
+            self.apply_model_result(result, source_key=request.get("source_key"), output_name=request.get("output_name"))
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
-    def build_model_request(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int):
-        source_df = self._get_source_df()
+    def build_model_request(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int, source_key: str | None = None, output_name: str | None = None):
+        source_df = self._get_source_df(source_key)
         if source_df is None or source_df.empty:
             raise ValueError("Нет данных кластеризации. Запустите clustering перед Markov modeling.")
         return {
@@ -75,9 +75,11 @@ class MarkovViewModel(BaseViewModel):
             "normalize": normalize,
             "sequential_only": sequential_only,
             "min_frequency": min_frequency,
+            "source_key": source_key,
+            "output_name": output_name,
         }
 
-    def execute_model(self, source_df, order, normalize, sequential_only, min_frequency, progress_callback=None,
+    def execute_model(self, source_df, order, normalize, sequential_only, min_frequency, source_key=None, output_name=None, progress_callback=None,
                       is_cancelled=None):
         return self.markov_service.build_model(
             source_df=source_df,
@@ -89,9 +91,9 @@ class MarkovViewModel(BaseViewModel):
             is_cancelled=is_cancelled,
         )
 
-    def apply_model_result(self, result: MarkovResult):
+    def apply_model_result(self, result: MarkovResult, source_key: str | None = None, output_name: str | None = None):
         self.current_result = result
-        self._persist_result(result)
+        self._persist_result(result, source_key=source_key, output_name=output_name)
         self.model_ready.emit(result)
         self.info_changed.emit("Markov model успешно построена.")
 
@@ -112,10 +114,19 @@ class MarkovViewModel(BaseViewModel):
         output_path = Path(file_path)
         self.current_result.transition_probabilities.to_csv(output_path)
 
-    def _get_source_df(self):
+    def _get_source_df(self, source_key: str | None = None):
+        mapping = {
+            "raw": self.project.raw_data,
+            "processed": self.project.processed_data,
+            "features": self.project.features,
+            "segments": self.project.segments,
+            "clusters": self.project.clusters,
+        }
+        if source_key in mapping:
+            return mapping[source_key]
         return self.project.clusters
 
-    def _persist_result(self, result: MarkovResult):
+    def _persist_result(self, result: MarkovResult, source_key: str | None = None, output_name: str | None = None):
         payload = result.to_project_payload()
         self.project.set_markov_matrix(result.transition_probabilities, params=result.params)
         self.project.set_markov_result(payload, params=result.params)
@@ -124,4 +135,6 @@ class MarkovViewModel(BaseViewModel):
             "params": result.params,
             "summary": result.summary,
             "stationary_distribution": result.stationary_distribution,
+            "source_key": source_key or "clusters",
+            "output_name": output_name or "markov_matrix",
         }
