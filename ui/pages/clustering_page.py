@@ -118,13 +118,16 @@ class ClusteringPage(BasePage):
         return out
 
     def _build_input_group(self):
-        group = QGroupBox("Входные данные")
+        group = QGroupBox("Входные данные: сегменты")
         vbox = QVBoxLayout(group)
 
         self.source_status = QLabel("Нет данных сегментации.")
+        self.input_hint = QLabel(
+            "Каждая строка таблицы соответствует одному сегменту. Кластеризация назначает cluster_id каждому сегменту.")
         self.segments_count_label = QLabel("Количество сегментов: 0")
         vbox.addWidget(self.source_status)
         vbox.addWidget(self.segments_count_label)
+        vbox.addWidget(self.input_hint)
 
         row = QHBoxLayout()
         self.select_all_btn = QPushButton("Выбрать все")
@@ -229,16 +232,8 @@ class ClusteringPage(BasePage):
         self.results_table.setMinimumHeight(220)
         vbox.addWidget(self.results_table)
 
-        axes_row = QHBoxLayout()
-        self.plot_x_combo = QComboBox()
-        self.plot_y_combo = QComboBox()
-        self.plot_x_combo.currentIndexChanged.connect(self._draw_scatter)
-        self.plot_y_combo.currentIndexChanged.connect(self._draw_scatter)
-        axes_row.addWidget(QLabel("X")); axes_row.addWidget(self.plot_x_combo)
-        axes_row.addWidget(QLabel("Y")); axes_row.addWidget(self.plot_y_combo)
-        vbox.addLayout(axes_row)
+        self.figure = Figure(figsize=(8, 7), constrained_layout=True)
 
-        self.figure = Figure(figsize=(8, 4), constrained_layout=True)
         self.canvas = ScrollFriendlyCanvas(self.figure)
         self.canvas.setMinimumHeight(280)
         vbox.addWidget(self.canvas)
@@ -269,12 +264,6 @@ class ClusteringPage(BasePage):
             self.columns_layout.addWidget(cb)
             self.column_checkboxes.append(cb)
 
-        self.plot_x_combo.clear()
-        self.plot_y_combo.clear()
-        self.plot_x_combo.addItems(columns)
-        self.plot_y_combo.addItems(columns)
-        if len(columns) > 1:
-            self.plot_y_combo.setCurrentIndex(1)
 
     def _set_all_columns(self, state: bool):
         for cb in self.column_checkboxes:
@@ -377,18 +366,12 @@ class ClusteringPage(BasePage):
         )
         self.metrics_label.setText("Метрики: " + "; ".join(metric_text))
 
-        self.plot_x_combo.clear()
-        self.plot_y_combo.clear()
-        self.plot_x_combo.addItems(result.selected_columns)
-        self.plot_y_combo.addItems(result.selected_columns)
-        if len(result.selected_columns) > 1:
-            self.plot_y_combo.setCurrentIndex(1)
-
         self._draw_scatter()
 
     def _draw_scatter(self):
         self.figure.clear()
-        ax = self.figure.add_subplot(111)
+        ax = self.figure.add_subplot(211)
+        ax2 = self.figure.add_subplot(212)
 
         if self.current_result is None:
             ax.text(0.5, 0.5, "Нет результата для визуализации", ha="center", va="center")
@@ -397,43 +380,37 @@ class ClusteringPage(BasePage):
             return
 
         cols = list(self.current_result.selected_columns)
-        if len(cols) < 2:
-            ax.text(0.5, 0.5, "Scatter plot требует минимум два признака", ha="center", va="center")
+        if len(cols) < 2 or len(self.current_result.clustered_segments) < 2:
+            ax.text(0.5, 0.5, "Недостаточно сегментов/признаков для PCA", ha="center", va="center")
             ax.axis("off")
-            self.canvas.draw_idle()
-            return
+        else:
+            pca_df = self.vm.clustering_service.build_pca_projection(self.current_result.clustered_segments, cols)
+            if pca_df.empty:
+                ax.text(0.5, 0.5, "Недостаточно данных для PCA", ha="center", va="center")
+                ax.axis("off")
+            else:
+                labels = pca_df["cluster_id"].to_numpy()
+                for label in sorted(set(labels.tolist())):
+                    m = labels == label
+                    ax.scatter(pca_df.loc[m, "PC1"], pca_df.loc[m, "PC2"], s=28, alpha=0.8,
+                               label=("noise (-1)" if label == -1 else f"cluster {label}"))
+                ax.set_xlabel("PC1");
+                ax.set_ylabel("PC2");
+                ax.set_title("Сегменты в пространстве PCA");
+                ax.grid(alpha=0.3);
+                ax.legend(loc="best")
 
-        x_col = self.plot_x_combo.currentText() or cols[0]
-        y_col = self.plot_y_combo.currentText() or cols[1]
-
-        df = self.current_result.clustered_segments
-        if x_col not in df.columns or y_col not in df.columns:
-            ax.text(0.5, 0.5, "Выбранные признаки недоступны", ha="center", va="center")
-            ax.axis("off")
-            self.canvas.draw_idle()
-            return
-
-        labels = df["cluster_id"].to_numpy()
-        x = pd.to_numeric(df[x_col], errors="coerce").to_numpy(dtype=float)
-        y = pd.to_numeric(df[y_col], errors="coerce").to_numpy(dtype=float)
-        mask = np.isfinite(x) & np.isfinite(y)
-
-        x = x[mask]
-        y = y[mask]
-        labels = labels[mask]
-
-        unique_labels = sorted(set(labels.tolist()))
-        for label in unique_labels:
-            cluster_mask = labels == label
-            cluster_name = "noise (-1)" if label == -1 else f"cluster {label}"
-            ax.scatter(x[cluster_mask], y[cluster_mask], s=26, alpha=0.8, label=cluster_name)
-
-        ax.set_xlabel(x_col)
-        ax.set_ylabel(y_col)
-        ax.set_title("Кластеры сегментов")
-        ax.grid(alpha=0.3)
-        if unique_labels:
-            ax.legend(loc="best")
+        fi = self.vm.clustering_service.build_feature_importance(self.current_result.clustered_segments, cols, top_n=10)
+        if fi.empty:
+            ax2.text(0.5, 0.5, "Невозможно оценить отличающие признаки: найден только один кластер.", ha="center",
+                     va="center")
+            ax2.axis("off")
+        else:
+            ax2.barh(fi["feature"], fi["score"], color="#4477AA")
+            ax2.invert_yaxis()
+            ax2.set_xlabel("Score")
+            ax2.set_title("Признаки, наиболее отличающие кластеры")
+            ax2.grid(alpha=0.3, axis="x")
         self.canvas.draw_idle()
 
     def _export_result(self):

@@ -36,7 +36,7 @@ class ClusteringViewModel(BaseViewModel):
             self.columns_ready.emit([])
             return
 
-        numeric_columns = list(segments_df.select_dtypes(include="number").columns)
+        numeric_columns = self._default_feature_columns(segments_df)
         self.source_info_ready.emit(
             {
                 "available": True,
@@ -114,10 +114,10 @@ class ClusteringViewModel(BaseViewModel):
         }
 
     def _get_source_df(self, source_key: str | None = None):
-        mapping = {"segments": self.project.segments, "features": self.project.features,
-                   "processed": self.project.processed_data, "raw": self.project.raw_data}
-        if source_key in mapping:
-            df = mapping[source_key]
-            if df is not None and not df.empty:
-                return df
+        if source_key and source_key != "segments":
+            raise ValueError("Кластеризация поддерживает только входные данные сегментов. Сначала выполните сегментацию.")
         return self.project.segments
+
+    def _default_feature_columns(self, segments_df):
+        excluded = {"segment_id", "start_idx", "end_idx", "start_time", "end_time", "duration", "length", "cluster_id", "cluster", "label", "state", "source_chunk_id", "score"}
+        return [c for c in segments_df.select_dtypes(include="number").columns if c.lower() not in excluded]

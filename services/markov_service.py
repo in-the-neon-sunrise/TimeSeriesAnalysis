@@ -10,9 +10,7 @@ from core.markov.markov_models import MarkovResult
 
 
 class MarkovService:
-    STATE_COLUMN_CANDIDATES = (
-        "cluster", "cluster_id", "cluster_label", "state", "state_id", "label"
-    )
+    STATE_COLUMN_CANDIDATES = ("cluster_id", "cluster", "label", "state", "cluster_label", "state_id")
     ORDER_COLUMN_CANDIDATES = (
         "segment_id", "segment", "order", "index", "start", "start_time", "end", "end_time", "time", "timestamp", "date"
     )
@@ -80,8 +78,7 @@ class MarkovService:
         state_col = self._choose_column(source_df.columns, self.STATE_COLUMN_CANDIDATES)
         if state_col is None:
             raise ValueError(
-                "Не удалось найти колонку состояний/кластеров. Ожидаются: cluster, cluster_id, state, state_id..."
-            )
+                "Для построения цепи Маркова нужен результат кластеризации сегментов со столбцом cluster_id. Сначала выполните кластеризацию сегментов.")
 
         df = source_df.copy()
         sort_columns = self._choose_order_columns(df)
@@ -263,19 +260,7 @@ class MarkovService:
         cols = list(df.columns)
         lower_to_original = {c.lower(): c for c in cols}
         # Приоритет осмысленных временных границ сегмента.
-        prioritized = [
-            "timestamp",
-            "time",
-            "date",
-            "start_time",
-            "start",
-            "end_time",
-            "end",
-            "segment_id",
-            "segment",
-            "order",
-            "index",
-        ]
+        prioritized = ["start_idx", "start_time", "segment_id", "end_idx", "end_time", "timestamp", "time", "date", "segment", "order", "index"]
         selected: List[str] = []
         for key in prioritized:
             col = lower_to_original.get(key)

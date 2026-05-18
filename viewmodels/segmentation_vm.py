@@ -68,7 +68,7 @@ class SegmentationViewModel(BaseViewModel):
 
     def apply_segmentation_result(self, result: SegmentationResult):
         self.current_result = result
-        self.project.set_segments(result.segmented_data, params=result.params)
+        self.project.set_segments(result.segments_table, params=result.params)
         self.project.parameters["segmentation_result"] = {
             "best_result": result.best_result_row,
             "edges": result.edges,
