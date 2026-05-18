@@ -25,7 +25,13 @@ class SegmentationViewModel(BaseViewModel):
         if df is None:
             self.columns_ready.emit([])
             return
+
         columns = list(df.select_dtypes(include="number").columns)
+
+        # Не предлагаем служебные колонки как признаки для повторной сегментации.
+        service_columns = {"stage_id", "is_boundary", "segment_id", "cluster_id"}
+        columns = [c for c in columns if c not in service_columns]
+
         self.columns_ready.emit(columns)
 
     def run_segmentation(self, selected_columns: List[str], params: Dict[str, Any]):
@@ -36,10 +42,16 @@ class SegmentationViewModel(BaseViewModel):
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
-    def build_segmentation_request(self, selected_columns: List[str], params: Dict[str, Any], source_key: str | None = None, output_name: str | None = None) -> Dict[str, Any]:
+    def build_segmentation_request(
+        self,
+        selected_columns: List[str],
+        params: Dict[str, Any],
+        source_key: str | None = None,
+        output_name: str | None = None,
+    ) -> Dict[str, Any]:
         source_df = self._get_source_df(source_key)
         if source_df is None:
-            raise ValueError("Нет данных признаков. Сначала выполните формирование признаков")
+            raise ValueError("Нет данных для сегментации. Сначала загрузите данные или сформируйте признаки.")
 
         return {
             "source_df": source_df,
@@ -50,8 +62,17 @@ class SegmentationViewModel(BaseViewModel):
             "output_name": output_name,
         }
 
-    def execute_segmentation(self, source_df, selected_columns, params, timestamp_series, source_key=None,
-                             output_name=None, progress_callback=None, is_cancelled=None):
+    def execute_segmentation(
+        self,
+        source_df,
+        selected_columns,
+        params,
+        timestamp_series,
+        source_key=None,
+        output_name=None,
+        progress_callback=None,
+        is_cancelled=None,
+    ):
         result = self.segmentation_service.run_segmentation(
             features_df=source_df,
             selected_columns=selected_columns,
@@ -61,6 +82,7 @@ class SegmentationViewModel(BaseViewModel):
             progress_callback=progress_callback,
             is_cancelled=is_cancelled,
         )
+
         result.params = dict(result.params)
         result.params["source_dataset_name"] = source_key or "features"
         result.params["output_dataset_name"] = output_name or "segments"
@@ -68,7 +90,12 @@ class SegmentationViewModel(BaseViewModel):
 
     def apply_segmentation_result(self, result: SegmentationResult):
         self.current_result = result
+
+        # Важно: в project.segments сохраняется именно таблица сегментов,
+        # а не построчная таблица со stage_id. Следующая кластеризация должна
+        # работать с сегментами как объектами.
         self.project.set_segments(result.segments_table, params=result.params)
+
         self.project.parameters["segmentation_result"] = {
             "best_result": result.best_result_row,
             "edges": result.edges,
@@ -77,7 +104,10 @@ class SegmentationViewModel(BaseViewModel):
             "source_dataset_name": result.params.get("source_dataset_name"),
             "output_dataset_name": result.params.get("output_dataset_name"),
             "mode": result.summary.get("mode", result.params.get("mode", "full")),
+            "chunk_stats": result.summary.get("chunk_stats", []),
+            "warnings": result.summary.get("warnings", []),
         }
+
         self.segmentation_ready.emit(result)
         self.info_changed.emit("Сегментация SDA завершена успешно")
 
@@ -89,13 +119,21 @@ class SegmentationViewModel(BaseViewModel):
         self.info_changed.emit("Результат сегментации очищен.")
 
     def _get_source_df(self, source_key: str | None = None) -> Optional[pd.DataFrame]:
-        mapping = {"features": self.project.features, "processed": self.project.processed_data, "raw": self.project.raw_data}
+        mapping = {
+            "features": self.project.features,
+            "processed": self.project.processed_data,
+            "raw": self.project.raw_data,
+        }
+
         if source_key in mapping and mapping[source_key] is not None and not mapping[source_key].empty:
             return mapping[source_key]
+
+        # По умолчанию предпочитаем признаки, потому что SDA в твоем pipeline логичнее запускать по feature matrix.
         for key in ["features", "processed", "raw"]:
             df = mapping[key]
             if df is not None and not df.empty:
                 return df
+
         return None
 
     def _get_timestamp_series(self, source_df: pd.DataFrame) -> Optional[pd.Series]:
@@ -105,12 +143,19 @@ class SegmentationViewModel(BaseViewModel):
 
         candidates = [c for c in raw.columns if "time" in c.lower() or "date" in c.lower()]
         if not candidates:
-            datetime_cols = [c for c in raw.columns if str(raw[c].dtype).startswith("datetime")]
-            candidates = datetime_cols
+            candidates = [c for c in raw.columns if str(raw[c].dtype).startswith("datetime")]
         if not candidates:
             return None
 
         col = candidates[0]
+
+        # Если source_df — raw или processed той же длины, можно напрямую сопоставить timestamp.
         if len(raw[col]) == len(source_df):
             return raw[col]
+
+        # Если source_df сохранил исходный индекс после dropna/feature engineering,
+        # сервис сможет reindex-нуть timestamp по индексу.
+        if set(source_df.index).issubset(set(raw.index)):
+            return raw[col]
+
         return None
