@@ -32,6 +32,10 @@ The application provides a full analytical workflow: from data import and prepro
 
 ## Installation
 
+Open installer folder and download installer file TimeSeriesAnalysis_Setup.exe
+
+or
+
 Download folder and open file main.exe:
 
 https://drive.google.com/drive/folders/1nWTzC9Hh4So7JdnhifHxG2JPA2mtZi3e?usp=sharing
