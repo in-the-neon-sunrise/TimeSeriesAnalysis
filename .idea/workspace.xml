@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="minor changes. toolbar">
+    <list default="true" id="c5d982ad-a71a-4708-b619-5eeac29dd2f1" name="Changes" comment="minor changes. undo some changes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/segmentation_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/segmentation_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ui/pages/segmentation_page.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/pages/segmentation_page.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/viewmodels/segmentation_vm.py" beforeDir="false" afterPath="$PROJECT_DIR$/viewmodels/segmentation_vm.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +66,7 @@
     "Python.project_repository.executor": "Run",
     "Python.report_page.executor": "Run",
     "Python.report_service.executor": "Run",
+    "Python.segmentation_service.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -224,7 +222,31 @@
       <option name="project" value="LOCAL" />
       <updated>1779026125208</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="minor changes. segmentation">
+      <option name="closed" value="true" />
+      <created>1779035139117</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1779035139117</updated>
+    </task>
+    <task id="LOCAL-00017" summary="minor changes. clustering">
+      <option name="closed" value="true" />
+      <created>1779136313271</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1779136313271</updated>
+    </task>
+    <task id="LOCAL-00018" summary="minor changes. undo some changes">
+      <option name="closed" value="true" />
+      <created>1779147607614</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1779147607614</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -266,6 +288,9 @@
     <MESSAGE value="Improved functionality" />
     <MESSAGE value="Last changes" />
     <MESSAGE value="minor changes. toolbar" />
-    <option name="LAST_COMMIT_MESSAGE" value="minor changes. toolbar" />
+    <MESSAGE value="minor changes. segmentation" />
+    <MESSAGE value="minor changes. clustering" />
+    <MESSAGE value="minor changes. undo some changes" />
+    <option name="LAST_COMMIT_MESSAGE" value="minor changes. undo some changes" />
   </component>
 </project>

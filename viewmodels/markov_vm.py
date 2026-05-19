@@ -21,9 +21,9 @@ class MarkovViewModel(BaseViewModel):
         self.markov_service = markov_service or MarkovService()
         self.current_result: Optional[MarkovResult] = None
 
-    def refresh_source_info(self):
+    def refresh_source_info(self, source_key: str | None = None):
         try:
-            source_df = self._get_source_df()
+            source_df = self._get_source_df(source_key)
             if source_df is None or source_df.empty:
                 self.source_info_ready.emit(
                     {
@@ -31,7 +31,7 @@ class MarkovViewModel(BaseViewModel):
                         "message": "Нет результатов кластеризации. Сначала выполните этап clustering.",
                         "sequence_length": 0,
                         "unique_states": 0,
-                        "source_name": "clusters",
+                        "source_name": source_key or "clusters",
                     }
                 )
                 return
@@ -43,7 +43,7 @@ class MarkovViewModel(BaseViewModel):
                     "message": "Данные кластеризации готовы для построения цепи Маркова.",
                     "sequence_length": len(sequence),
                     "unique_states": len(set(sequence)),
-                    "source_name": "clusters",
+                    "source_name": source_key or "clusters",
                 }
             )
         except Exception as exc:
@@ -53,7 +53,7 @@ class MarkovViewModel(BaseViewModel):
                     "message": str(exc),
                     "sequence_length": 0,
                     "unique_states": 0,
-                    "source_name": "clusters",
+                    "source_name": source_key or "clusters",
                 }
             )
 
@@ -65,23 +65,42 @@ class MarkovViewModel(BaseViewModel):
         except Exception as exc:
             self.error_occurred.emit(str(exc))
 
-    def build_model_request(self, order: int, normalize: bool, sequential_only: bool, min_frequency: int, source_key: str | None = None, output_name: str | None = None):
+    def build_model_request(
+        self,
+        order: int,
+        normalize: bool,
+        sequential_only: bool,
+        min_frequency: int,
+        source_key: str | None = None,
+        output_name: str | None = None,
+    ):
         source_df = self._get_source_df(source_key)
         if source_df is None or source_df.empty:
             raise ValueError("Нет данных кластеризации. Запустите clustering перед Markov modeling.")
+
         return {
             "source_df": source_df,
             "order": order,
             "normalize": normalize,
             "sequential_only": sequential_only,
             "min_frequency": min_frequency,
-            "source_key": source_key,
-            "output_name": output_name,
+            "source_key": source_key or "clusters",
+            "output_name": output_name or "markov_matrix",
         }
 
-    def execute_model(self, source_df, order, normalize, sequential_only, min_frequency, source_key=None, output_name=None, progress_callback=None,
-                      is_cancelled=None):
-        return self.markov_service.build_model(
+    def execute_model(
+        self,
+        source_df,
+        order,
+        normalize,
+        sequential_only,
+        min_frequency,
+        source_key=None,
+        output_name=None,
+        progress_callback=None,
+        is_cancelled=None,
+    ):
+        result = self.markov_service.build_model(
             source_df=source_df,
             order=order,
             normalize=normalize,
@@ -90,6 +109,10 @@ class MarkovViewModel(BaseViewModel):
             progress_callback=progress_callback,
             is_cancelled=is_cancelled,
         )
+        result.params = dict(result.params)
+        result.params["source_dataset_name"] = source_key or "clusters"
+        result.params["output_dataset_name"] = output_name or "markov_matrix"
+        return result
 
     def apply_model_result(self, result: MarkovResult, source_key: str | None = None, output_name: str | None = None):
         self.current_result = result
@@ -114,16 +137,36 @@ class MarkovViewModel(BaseViewModel):
         output_path = Path(file_path)
         self.current_result.transition_probabilities.to_csv(output_path)
 
+    def export_long_transitions_csv(self, file_path: str):
+        if self.current_result is None:
+            raise ValueError("Нет результатов для экспорта.")
+        if not file_path:
+            return
+
+        output_path = Path(file_path)
+        self.current_result.transitions_long_table.to_csv(output_path, index=False)
+
+    def get_state_sequence_table(self, source_key: str | None = None):
+        source_df = self._get_source_df(source_key)
+        if source_df is None or source_df.empty:
+            return None
+        return self.markov_service.build_state_sequence_table(source_df)
+
+    def get_state_counts_table(self):
+        if self.current_result is None:
+            return None
+        return self.markov_service.build_state_counts_table(self.current_result.state_sequence)
+
     def _get_source_df(self, source_key: str | None = None):
         mapping = {
-            "raw": self.project.raw_data,
-            "processed": self.project.processed_data,
-            "features": self.project.features,
-            "segments": self.project.segments,
             "clusters": self.project.clusters,
+            "segments": self.project.segments,
         }
+
         if source_key in mapping:
             return mapping[source_key]
+
+        # Для Маркова правильный источник — именно результаты кластеризации сегментов.
         return self.project.clusters
 
     def _persist_result(self, result: MarkovResult, source_key: str | None = None, output_name: str | None = None):
@@ -132,8 +175,8 @@ class MarkovViewModel(BaseViewModel):
         self.project.set_markov_result(payload, params=result.params)
         self.project.parameters["markov"] = {
             "order": result.order,
-            "params": result.params,
-            "summary": result.summary,
+            "params": dict(result.params),
+            "summary": dict(result.summary),
             "stationary_distribution": result.stationary_distribution,
             "source_key": source_key or "clusters",
             "output_name": output_name or "markov_matrix",
